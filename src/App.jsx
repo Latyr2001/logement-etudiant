@@ -45,6 +45,7 @@ function App() {
     lieuChambre: "Campus social",
     numeroChambre: "",
   });
+  const [campusCertificatFile, setCampusCertificatFile] = useState(null);
 
   const EMAILJS_SERVICE_ID = "service_omlh6vq";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
@@ -209,6 +210,27 @@ function App() {
   const ajouterEtudiantCampus = async (e) => {
     e.preventDefault();
 
+    let certificatUrl = "";
+
+    if (campusCertificatFile) {
+      const nomFichier = `${Date.now()}_${campusCertificatFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("certificats")
+        .upload(nomFichier, campusCertificatFile);
+
+      if (uploadError) {
+        console.error("Erreur upload certificat:", uploadError);
+        alert("Erreur lors de l'envoi du certificat.");
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("certificats")
+        .getPublicUrl(nomFichier);
+
+      certificatUrl = urlData.publicUrl;
+    }
+
     const nouvelleEntree = {
       nom: campusFormData.nom,
       prenom: campusFormData.prenom,
@@ -217,6 +239,7 @@ function App() {
       niveau: campusFormData.niveau,
       lieuChambre: campusFormData.lieuChambre,
       numeroChambre: campusFormData.numeroChambre,
+      certificat: certificatUrl,
       statut: "en attente",
     };
 
@@ -238,6 +261,7 @@ function App() {
       lieuChambre: "Campus social",
       numeroChambre: "",
     });
+    setCampusCertificatFile(null);
   };
 
   const voirCertificat = async (certificat) => {
@@ -687,9 +711,11 @@ function App() {
           maxWidth: "400px",
           margin: "80px auto",
           padding: "30px",
-          border: `2px solid ${bleuFonce}`,
-          borderRadius: "10px",
-          textAlign: "center"
+          backgroundColor: "#faf7f0",
+          border: "1.5px solid #1e5fa8",
+          borderRadius: "12px",
+          textAlign: "center",
+          fontFamily: "'Segoe UI', Arial, sans-serif"
         }}>
           <h2 style={{ color: bleuFonce }}>Accès Campus social</h2>
           <p style={{ color: "#555" }}>Espace réservé à la gestion des chambres au campus social, à l'ESP et à Claudel.</p>
@@ -699,7 +725,7 @@ function App() {
               placeholder="Mot de passe"
               value={motDePasseCampusSaisi}
               onChange={(e) => setMotDePasseCampusSaisi(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
+              style={{ width: "100%", padding: "12px 14px", marginBottom: "10px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }}
             />
             {erreurCampus && <p style={{ color: "red" }}>{erreurCampus}</p>}
             <button
@@ -721,55 +747,89 @@ function App() {
       )}
 
       {page === "campus" && authentifieCampus && (
-        <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto" }}>
+        <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto", fontFamily: "'Segoe UI', Arial, sans-serif" }}>
           <h2 style={{ color: bleuFonce }}>Ajouter un étudiant — Campus social / ESP / Claudel</h2>
           <p style={{ color: "#777", fontSize: "14px" }}>
             L'étudiant ajouté ici apparaîtra en attente de validation dans l'Espace gestion.
             Une fois validé, il n'apparaîtra pas dans le suivi des loyers.
           </p>
-          <form onSubmit={ajouterEtudiantCampus} style={{ marginBottom: "40px" }}>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Nom : </label><br />
-              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required style={{ width: "100%", padding: "8px" }} />
+          <form onSubmit={ajouterEtudiantCampus} style={{
+            marginBottom: "40px",
+            backgroundColor: "#faf7f0",
+            padding: "24px",
+            borderRadius: "12px",
+          }}>
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
+                Nom <span style={{ color: "#c98a2c" }}>*</span>
+              </label>
+              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Diallo" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Prénom : </label><br />
-              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required style={{ width: "100%", padding: "8px" }} />
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
+                Prénom <span style={{ color: "#c98a2c" }}>*</span>
+              </label>
+              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Aminata" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Téléphone : </label><br />
-              <input type="tel" name="telephone" value={campusFormData.telephone} onChange={handleCampusChange} required style={{ width: "100%", padding: "8px" }} />
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
+                Téléphone <span style={{ color: "#c98a2c" }}>*</span>
+              </label>
+              <input type="tel" name="telephone" value={campusFormData.telephone} onChange={handleCampusChange} required placeholder="77 123 45 67" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Filière : </label><br />
-              <input type="text" name="filiere" value={campusFormData.filiere} onChange={handleCampusChange} style={{ width: "100%", padding: "8px" }} />
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Filière</label>
+              <input type="text" name="filiere" value={campusFormData.filiere} onChange={handleCampusChange} placeholder="Ex: Mathématiques" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Niveau : </label><br />
-              <input type="text" name="niveau" value={campusFormData.niveau} onChange={handleCampusChange} placeholder="Ex: Licence 2" style={{ width: "100%", padding: "8px" }} />
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Niveau</label>
+              <input type="text" name="niveau" value={campusFormData.niveau} onChange={handleCampusChange} placeholder="Ex: Licence 2" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Lieu : </label><br />
-              <select name="lieuChambre" value={campusFormData.lieuChambre} onChange={handleCampusChange} style={{ width: "100%", padding: "8px" }}>
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
+                Lieu <span style={{ color: "#c98a2c" }}>*</span>
+              </label>
+              <select name="lieuChambre" value={campusFormData.lieuChambre} onChange={handleCampusChange} style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }}>
                 {LIEUX_CHAMBRE.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
               </select>
             </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Numéro de chambre : </label><br />
-              <input type="text" name="numeroChambre" value={campusFormData.numeroChambre} onChange={handleCampusChange} required style={{ width: "100%", padding: "8px" }} />
+            <div style={{ marginBottom: "22px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
+                Numéro de chambre <span style={{ color: "#c98a2c" }}>*</span>
+              </label>
+              <input type="text" name="numeroChambre" value={campusFormData.numeroChambre} onChange={handleCampusChange} required placeholder="Ex: 12" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
+                Certificat d'inscription (PDF ou image)
+              </label>
+              <input
+                type="file"
+                name="certificat"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setCampusCertificatFile(e.target.files[0])}
+                style={{ fontSize: "13px" }}
+              />
+              {campusCertificatFile && (
+                <p style={{ fontSize: "12px", color: "green", marginTop: "6px" }}>
+                  Fichier sélectionné : {campusCertificatFile.name}
+                </p>
+              )}
             </div>
             <button
               type="submit"
               style={{
+                width: "100%",
                 backgroundColor: bleuFonce,
                 color: "white",
                 border: "none",
-                padding: "10px 25px",
-                borderRadius: "25px",
+                padding: "12px",
+                borderRadius: "10px",
                 cursor: "pointer",
-                fontWeight: "bold"
+                fontWeight: "bold",
+                fontSize: "15px",
               }}
             >
               Ajouter l'étudiant
@@ -805,6 +865,17 @@ function App() {
                     <li key={e.id} style={{ marginBottom: "4px" }}>
                       Chambre {e.numeroChambre || "?"} — {e.nom} {e.prenom} — {e.telephone} —{" "}
                       <span style={{ fontWeight: "bold", color: couleurStatut(e.statut) }}>{e.statut}</span>
+                      {e.certificat && (
+                        <>
+                          {" — "}
+                          <button
+                            onClick={() => voirCertificat(e.certificat)}
+                            style={{ background: "none", border: "none", color: "#1e5fa8", textDecoration: "underline", cursor: "pointer", padding: 0, font: "inherit" }}
+                          >
+                            Voir le certificat
+                          </button>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>
