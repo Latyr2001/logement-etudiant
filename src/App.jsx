@@ -416,18 +416,38 @@ function App() {
 
             {/* Bloc paiement du loyer via Wave */}
             <div style={{
-              maxWidth: "480px",
+              maxWidth: "700px",
               margin: "34px auto 0",
               backgroundColor: "white",
-              border: `2px solid ${bleuMoyen}`,
-              borderRadius: "16px",
-              padding: "26px 24px",
-              textAlign: "center"
+              border: `1.5px solid ${bleuMoyen}`,
+              borderRadius: "18px",
+              padding: "20px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "16px",
+              boxShadow: "0 4px 20px rgba(13,59,102,0.06)"
             }}>
-              <h3 style={{ color: bleuFonce, marginBottom: "8px" }}>Payer mon loyer</h3>
-              <p style={{ color: "#555", fontSize: "14px", marginBottom: "18px" }}>
-                Réglez votre loyer en toute sécurité via Wave.
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", textAlign: "left" }}>
+                <div style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "12px",
+                  backgroundColor: "#eaf1fb",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "20px",
+                  flexShrink: 0,
+                }}>👛</div>
+                <div>
+                  <h3 style={{ color: bleuFonce, margin: 0, fontSize: "17px" }}>Payer mon loyer</h3>
+                  <p style={{ color: "#777", fontSize: "13px", margin: "4px 0 0" }}>
+                    Réglez votre loyer en toute sécurité via Wave.
+                  </p>
+                </div>
+              </div>
               <a
                 href={LIEN_WAVE}
                 target="_blank"
@@ -435,17 +455,18 @@ function App() {
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "10px",
-                  backgroundColor: "#1DC8CD",
+                  gap: "8px",
+                  background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
                   color: "white",
-                  padding: "12px 28px",
+                  padding: "12px 26px",
                   borderRadius: "25px",
                   fontWeight: "bold",
                   textDecoration: "none",
-                  fontSize: "16px"
+                  fontSize: "15px",
+                  whiteSpace: "nowrap"
                 }}
               >
-                Payer avec Wave
+                🐧 Payer avec Wave
               </a>
             </div>
           </div>
