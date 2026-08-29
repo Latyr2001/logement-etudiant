@@ -52,7 +52,9 @@
 
 body {
   margin: 0;
-}
+  background: linear-gradient(180deg, #1e3a8a 0%, #7c3aed 20%, #dc4a5f 45%, #f4863a 65%, #ffd27a 85%, #fff3d6 100%);
+} 
+
 
 #root {
   width: 1126px;
