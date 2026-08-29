@@ -112,12 +112,12 @@ function DemandeForm({ onSubmitDemande }) {
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: "22px" }}>
           <label style={styleLabel}>Nom <span style={styleAsterisque}>*</span></label>
-          <input type="text" name="nom" value={formData.nom} onChange={handleChange} required placeholder="Diallo" style={styleChamp} />
+          <input type="text" name="nom" value={formData.nom} onChange={handleChange} required placeholder="Tine" style={styleChamp} />
         </div>
 
         <div style={{ marginBottom: "22px" }}>
           <label style={styleLabel}>Prénom <span style={styleAsterisque}>*</span></label>
-          <input type="text" name="prenom" value={formData.prenom} onChange={handleChange} required placeholder="Aminata" style={styleChamp} />
+          <input type="text" name="prenom" value={formData.prenom} onChange={handleChange} required placeholder="Maurice Latyr" style={styleChamp} />
         </div>
 
         <div style={{ marginBottom: "22px" }}>
