@@ -725,7 +725,7 @@ function App() {
               placeholder="Mot de passe"
               value={motDePasseCampusSaisi}
               onChange={(e) => setMotDePasseCampusSaisi(e.target.value)}
-              style={{ width: "100%", padding: "12px 14px", marginBottom: "10px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "12px 14px", marginBottom: "10px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }}
             />
             {erreurCampus && <p style={{ color: "red" }}>{erreurCampus}</p>}
             <button
@@ -763,33 +763,33 @@ function App() {
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Nom <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Diallo" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Diallo" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Prénom <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Aminata" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Aminata" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Téléphone <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <input type="tel" name="telephone" value={campusFormData.telephone} onChange={handleCampusChange} required placeholder="77 123 45 67" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="tel" name="telephone" value={campusFormData.telephone} onChange={handleCampusChange} required placeholder="77 123 45 67" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Filière</label>
-              <input type="text" name="filiere" value={campusFormData.filiere} onChange={handleCampusChange} placeholder="Ex: Mathématiques" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="filiere" value={campusFormData.filiere} onChange={handleCampusChange} placeholder="Ex: Mathématiques" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Niveau</label>
-              <input type="text" name="niveau" value={campusFormData.niveau} onChange={handleCampusChange} placeholder="Ex: Licence 2" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="niveau" value={campusFormData.niveau} onChange={handleCampusChange} placeholder="Ex: Licence 2" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Lieu <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <select name="lieuChambre" value={campusFormData.lieuChambre} onChange={handleCampusChange} style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }}>
+              <select name="lieuChambre" value={campusFormData.lieuChambre} onChange={handleCampusChange} style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }}>
                 {LIEUX_CHAMBRE.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
@@ -799,7 +799,7 @@ function App() {
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Numéro de chambre <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <input type="text" name="numeroChambre" value={campusFormData.numeroChambre} onChange={handleCampusChange} required placeholder="Ex: 12" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="numeroChambre" value={campusFormData.numeroChambre} onChange={handleCampusChange} required placeholder="Ex: 12" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
