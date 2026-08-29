@@ -84,7 +84,7 @@ function DemandeForm({ onSubmitDemande }) {
     padding: "14px 16px",
     fontSize: "16px",
     borderRadius: "10px",
-    border: "1px solid #e2ddd0",
+    border: "1.5px solid #1e5fa8",
     backgroundColor: "#fdfcf9",
     boxSizing: "border-box",
     fontFamily: "inherit",
