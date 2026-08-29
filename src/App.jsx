@@ -319,7 +319,7 @@ function App() {
   };
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', Arial, sans-serif", margin: 0 }}>
+    <div style={{ fontFamily: "'Segoe UI', Arial, sans-serif", margin: 0, backgroundColor: "white", minHeight: "100vh" }}>
       <nav style={{
         backgroundColor: bleuFonce,
         padding: "15px 20px",
@@ -763,13 +763,13 @@ function App() {
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Nom <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Diallo" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Tine" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
                 Prénom <span style={{ color: "#c98a2c" }}>*</span>
               </label>
-              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Aminata" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
+              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Maurice Latyr" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: "18px" }}>
               <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
