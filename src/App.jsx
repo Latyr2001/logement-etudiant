@@ -284,6 +284,29 @@ function App() {
 
   const bleuFonce = "#0d3b66";
   const bleuMoyen = "#1e5fa8";
+  const bleuNuit = "#0c1f4b";
+
+  const badgeStatut = (statut) => {
+    const couleurs = {
+      "validée": { bg: "#dcf5e3", text: "#1e7d3a" },
+      "non validée": { bg: "#fbdede", text: "#c0392b" },
+      "en attente": { bg: "#fdecc8", text: "#b8860b" },
+    };
+    const c = couleurs[statut] || { bg: "#eee", text: "#555" };
+    return (
+      <span style={{
+        backgroundColor: c.bg,
+        color: c.text,
+        padding: "4px 12px",
+        borderRadius: "20px",
+        fontWeight: "700",
+        fontSize: "13px",
+        whiteSpace: "nowrap",
+      }}>
+        {statut}
+      </span>
+    );
+  };
 
   // ⚠️ Remplacez ce lien par votre lien marchand Wave
   // (ex: "https://pay.wave.com/m/M_xxxxxxx/c/sn/")
@@ -548,182 +571,211 @@ function App() {
       )}
 
       {page === "gestion" && authentifie && (
-        <div style={{ padding: "20px", maxWidth: "1100px", margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ color: bleuFonce }}>Espace gestion — Demandes reçues ({demandes.length})</h2>
-            <button
-              onClick={seDeconnecter}
-              style={{ backgroundColor: "#555", color: "white", border: "none", padding: "8px 18px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}
-            >
-              Se déconnecter
-            </button>
-          </div>
-          {chargement ? (
-            <p>Chargement...</p>
-          ) : demandes.length === 0 ? (
-            <p>Aucune demande pour le moment.</p>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "50px" }}>
-              <thead>
-                <tr style={{ borderBottom: `2px solid ${bleuFonce}` }}>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Nom</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Prénom</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Filière</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>N° carte étudiant</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Téléphone</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Quartier</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Certificat</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Statut</th>
-                  <th style={{ textAlign: "left", padding: "8px" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {demandes.map((d) => (
-                  <tr key={d.id} style={{ borderBottom: "1px solid #ccc" }}>
-                    <td style={{ padding: "8px" }}>{d.nom}</td>
-                    <td style={{ padding: "8px" }}>{d.prenom}</td>
-                    <td style={{ padding: "8px" }}>{d.filiere}</td>
-                    <td style={{ padding: "8px" }}>{d.numeroCarteEtudiant}</td>
-                    <td style={{ padding: "8px" }}>{d.telephone}</td>
-                    <td style={{ padding: "8px" }}>
-                      {d.quartier
-                        ? (d.quartier === "Autre" ? d.autreQuartier : d.quartier)
-                        : d.lieuChambre
-                        ? `${d.lieuChambre} (chambre ${d.numeroChambre || "?"})`
-                        : "—"}
-                    </td>
-                    <td style={{ padding: "8px" }}>
-                      {d.certificat ? (
-                        <button
-                          onClick={() => voirCertificat(d.certificat)}
-                          style={{ background: "none", border: "none", color: "#1e5fa8", textDecoration: "underline", cursor: "pointer", padding: 0, font: "inherit" }}
-                        >
-                          Voir
-                        </button>
-                      ) : "—"}
-                    </td>
-                    <td style={{ padding: "8px", fontWeight: "bold", color: couleurStatut(d.statut) }}>
-                      {d.statut}
-                    </td>
-                    <td style={{ padding: "8px" }}>
-                      <button onClick={() => changerStatut(d.id, "validée")} style={{ marginRight: "5px", marginBottom: "4px", backgroundColor: "#2e7d32", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Valider</button>
-                      <button onClick={() => changerStatut(d.id, "non validée")} style={{ marginRight: "5px", marginBottom: "4px", backgroundColor: "#c62828", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Refuser</button>
-                      <button onClick={() => changerStatut(d.id, "en attente")} style={{ marginRight: "5px", marginBottom: "4px", backgroundColor: "#f9a825", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Remettre en attente</button>
-                      <button onClick={() => supprimerDemande(d.id)} style={{ backgroundColor: "#555", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", cursor: "pointer" }}>Supprimer</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <h2 style={{ color: bleuFonce }}>Logements par appartement</h2>
-          {demandesValideesAppartement.length === 0 ? (
-            <p>Aucun étudiant avec un logement validé pour le moment.</p>
-          ) : (
-            <div style={{ marginBottom: "50px" }}>
-              {Object.entries(grouperParAppartement()).map(([nomAppart, etudiants]) => (
-                <div
-                  key={nomAppart}
-                  style={{
-                    marginBottom: "18px",
-                    border: `1px solid ${bleuMoyen}`,
-                    borderRadius: "8px",
-                    padding: "14px 18px"
-                  }}
-                >
-                  <h3 style={{ color: bleuMoyen, marginTop: 0, marginBottom: "8px" }}>
-                    {nomAppart} <span style={{ color: "#777", fontWeight: "normal" }}>({etudiants.length} étudiant{etudiants.length > 1 ? "s" : ""})</span>
-                  </h3>
-                  <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                    {etudiants.map((e) => (
-                      <li key={e.id} style={{ marginBottom: "4px" }}>
-                        {e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+        <div style={{ backgroundColor: bleuNuit, minHeight: "100vh", padding: "24px 16px" }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>📋</div>
+                <h2 style={{ color: "white", margin: 0, fontSize: "19px" }}>Espace gestion — Demandes reçues ({demandes.length})</h2>
+              </div>
+              <button
+                onClick={seDeconnecter}
+                style={{ backgroundColor: "#1a2f5c", color: "white", border: "none", padding: "10px 18px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                ⏻ Se déconnecter
+              </button>
             </div>
-          )}
 
-          <h2 style={{ color: bleuFonce }}>Chambres — Campus social / ESP / Claudel</h2>
-          {demandesValideesCampus.length === 0 ? (
-            <p>Aucun étudiant validé dans ces chambres pour le moment.</p>
-          ) : (
-            <div style={{ marginBottom: "50px" }}>
-              {Object.entries(grouperParChambre()).map(([lieu, etudiants]) => (
-                <div
-                  key={lieu}
-                  style={{
-                    marginBottom: "18px",
-                    border: `1px solid ${bleuMoyen}`,
-                    borderRadius: "8px",
-                    padding: "14px 18px"
-                  }}
-                >
-                  <h3 style={{ color: bleuMoyen, marginTop: 0, marginBottom: "8px" }}>
-                    {lieu} <span style={{ color: "#777", fontWeight: "normal" }}>({etudiants.length} étudiant{etudiants.length > 1 ? "s" : ""})</span>
-                  </h3>
-                  <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                    {etudiants.map((e) => (
-                      <li key={e.id} style={{ marginBottom: "4px" }}>
-                        Chambre {e.numeroChambre || "?"} — {e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <h2 style={{ color: bleuFonce }}>Suivi des loyers</h2>
-          {demandesValideesAppartement.length === 0 ? (
-            <p>Aucun étudiant avec un logement validé pour le moment.</p>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ borderBottom: `2px solid ${bleuFonce}` }}>
-                    <th style={{ textAlign: "left", padding: "8px", position: "sticky", left: 0, backgroundColor: "white" }}>Étudiant</th>
-                    {ORDRE_ANNEE_SCOLAIRE.map((m) => (
-                      <th key={m} style={{ padding: "8px", fontSize: "12px" }}>{m.slice(0, 3)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {demandesValideesAppartement.map((d) => {
-                    const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
-                    return (
-                      <tr key={d.id} style={{ borderBottom: "1px solid #ccc" }}>
-                        <td style={{ padding: "8px", fontWeight: "bold", position: "sticky", left: 0, backgroundColor: "white" }}>
-                          {d.nom} {d.prenom}
+            {chargement ? (
+              <p style={{ color: "white" }}>Chargement...</p>
+            ) : demandes.length === 0 ? (
+              <p style={{ color: "white" }}>Aucune demande pour le moment.</p>
+            ) : (
+              <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "8px", marginBottom: "30px", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", color: "white", minWidth: "900px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #24417f" }}>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Nom</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Prénom</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Filière</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>N° carte étudiant</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Téléphone</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Quartier</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Certificat</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Statut</th>
+                      <th style={{ textAlign: "left", padding: "12px" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {demandes.map((d) => (
+                      <tr key={d.id} style={{ borderBottom: "1px solid #1e3564" }}>
+                        <td style={{ padding: "12px" }}>{d.nom}</td>
+                        <td style={{ padding: "12px" }}>{d.prenom}</td>
+                        <td style={{ padding: "12px" }}>{d.filiere}</td>
+                        <td style={{ padding: "12px" }}>{d.numeroCarteEtudiant}</td>
+                        <td style={{ padding: "12px" }}>{d.telephone}</td>
+                        <td style={{ padding: "12px" }}>
+                          {d.quartier
+                            ? (d.quartier === "Autre" ? d.autreQuartier : d.quartier)
+                            : d.lieuChambre
+                            ? `${d.lieuChambre} (chambre ${d.numeroChambre || "?"})`
+                            : "—"}
                         </td>
-                        {ORDRE_ANNEE_SCOLAIRE.map((m) => {
-                          const loyerMois = loyersEtudiant.find((l) => l.mois === m);
-                          const paye = loyerMois?.paye;
-                          return (
-                            <td key={m} style={{ textAlign: "center", padding: "4px" }}>
-                              <span style={{
-                                display: "inline-block",
-                                width: "20px",
-                                height: "20px",
-                                borderRadius: "50%",
-                                backgroundColor: paye ? "#2e7d32" : "#ddd"
-                              }} title={paye ? "Payé" : "Non payé"}></span>
-                            </td>
-                          );
-                        })}
+                        <td style={{ padding: "12px" }}>
+                          {d.certificat ? (
+                            <button
+                              onClick={() => voirCertificat(d.certificat)}
+                              style={{ background: "none", border: "none", color: "#7fb3ff", textDecoration: "underline", cursor: "pointer", padding: 0, font: "inherit" }}
+                            >
+                              Voir
+                            </button>
+                          ) : "—"}
+                        </td>
+                        <td style={{ padding: "12px" }}>
+                          {badgeStatut(d.statut)}
+                        </td>
+                        <td style={{ padding: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                            <button onClick={() => changerStatut(d.id, "validée")} style={{ backgroundColor: "#2e7d32", color: "white", border: "none", padding: "6px 10px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Valider</button>
+                            <button onClick={() => changerStatut(d.id, "non validée")} style={{ backgroundColor: "#c62828", color: "white", border: "none", padding: "6px 10px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Refuser</button>
+                            <button onClick={() => changerStatut(d.id, "en attente")} style={{ backgroundColor: "#e0a020", color: "white", border: "none", padding: "6px 10px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remettre en attente</button>
+                            <button onClick={() => supprimerDemande(d.id)} style={{ backgroundColor: "#3a4a6b", color: "white", border: "none", padding: "6px 10px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Supprimer</button>
+                          </div>
+                        </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <p style={{ fontSize: "13px", color: "#777", marginTop: "10px" }}>
-                🟢 Payé &nbsp;&nbsp; ⚪ Non payé — Le paiement en ligne sera bientôt activé.
-              </p>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 14px" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🏢</div>
+              <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Logements par appartement</h2>
             </div>
-          )}
+            {demandesValideesAppartement.length === 0 ? (
+              <p style={{ color: "#cfd8ec" }}>Aucun étudiant avec un logement validé pour le moment.</p>
+            ) : (
+              <div style={{ marginBottom: "40px", display: "grid", gap: "14px" }}>
+                {Object.entries(grouperParAppartement()).map(([nomAppart, etudiants]) => (
+                  <div
+                    key={nomAppart}
+                    style={{
+                      backgroundColor: "white",
+                      borderRadius: "14px",
+                      padding: "16px 20px",
+                      display: "flex",
+                      gap: "14px",
+                      borderLeft: `5px solid ${bleuMoyen}`,
+                    }}
+                  >
+                    <div style={{ width: "38px", height: "38px", borderRadius: "10px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "17px", flexShrink: 0 }}>🏠</div>
+                    <div>
+                      <h3 style={{ color: bleuFonce, marginTop: 0, marginBottom: "6px", fontSize: "15px" }}>
+                        {nomAppart} <span style={{ color: "#888", fontWeight: "normal" }}>({etudiants.length} étudiant{etudiants.length > 1 ? "s" : ""})</span>
+                      </h3>
+                      <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "14px", color: "#333" }}>
+                        {etudiants.map((e) => (
+                          <li key={e.id} style={{ marginBottom: "4px" }}>
+                            {e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 14px" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🛏️</div>
+              <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Chambres — Campus social / ESP / Claudel</h2>
+            </div>
+            {demandesValideesCampus.length === 0 ? (
+              <p style={{ color: "#cfd8ec" }}>Aucun étudiant validé dans ces chambres pour le moment.</p>
+            ) : (
+              <div style={{ marginBottom: "40px", display: "grid", gap: "14px" }}>
+                {Object.entries(grouperParChambre()).map(([lieu, etudiants]) => (
+                  <div
+                    key={lieu}
+                    style={{
+                      backgroundColor: "white",
+                      borderRadius: "14px",
+                      padding: "16px 20px",
+                      display: "flex",
+                      gap: "14px",
+                      borderLeft: `5px solid #2e9e8f`,
+                    }}
+                  >
+                    <div style={{ width: "38px", height: "38px", borderRadius: "10px", backgroundColor: "#e3f6f3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "17px", flexShrink: 0 }}>🛏️</div>
+                    <div>
+                      <h3 style={{ color: bleuFonce, marginTop: 0, marginBottom: "6px", fontSize: "15px" }}>
+                        {lieu} <span style={{ color: "#888", fontWeight: "normal" }}>({etudiants.length} étudiant{etudiants.length > 1 ? "s" : ""})</span>
+                      </h3>
+                      <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "14px", color: "#333" }}>
+                        {etudiants.map((e) => (
+                          <li key={e.id} style={{ marginBottom: "4px" }}>
+                            Chambre {e.numeroChambre || "?"} — {e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 14px" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🏠</div>
+              <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Suivi des loyers</h2>
+            </div>
+            {demandesValideesAppartement.length === 0 ? (
+              <p style={{ color: "#cfd8ec" }}>Aucun étudiant avec un logement validé pour le moment.</p>
+            ) : (
+              <div style={{ backgroundColor: "white", borderRadius: "14px", padding: "16px", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: `2px solid ${bleuFonce}` }}>
+                      <th style={{ textAlign: "left", padding: "8px", position: "sticky", left: 0, backgroundColor: "white" }}>Étudiant</th>
+                      {ORDRE_ANNEE_SCOLAIRE.map((m) => (
+                        <th key={m} style={{ padding: "8px", fontSize: "12px" }}>{m.slice(0, 3)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {demandesValideesAppartement.map((d) => {
+                      const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
+                      return (
+                        <tr key={d.id} style={{ borderBottom: "1px solid #ccc" }}>
+                          <td style={{ padding: "8px", fontWeight: "bold", position: "sticky", left: 0, backgroundColor: "white" }}>
+                            {d.nom} {d.prenom}
+                          </td>
+                          {ORDRE_ANNEE_SCOLAIRE.map((m) => {
+                            const loyerMois = loyersEtudiant.find((l) => l.mois === m);
+                            const paye = loyerMois?.paye;
+                            return (
+                              <td key={m} style={{ textAlign: "center", padding: "4px" }}>
+                                <span style={{
+                                  display: "inline-block",
+                                  width: "20px",
+                                  height: "20px",
+                                  borderRadius: "50%",
+                                  backgroundColor: paye ? "#2e7d32" : "#ddd"
+                                }} title={paye ? "Payé" : "Non payé"}></span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <p style={{ fontSize: "13px", color: "#777", marginTop: "10px" }}>
+                  🟢 Payé &nbsp;&nbsp; ⚪ Non payé — Le paiement en ligne sera bientôt activé.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -768,98 +820,144 @@ function App() {
       )}
 
       {page === "campus" && authentifieCampus && (
-        <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto", fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-          <h2 style={{ color: bleuFonce }}>Ajouter un étudiant — Campus social / ESP / Claudel</h2>
-          <p style={{ color: "#777", fontSize: "14px" }}>
-            L'étudiant ajouté ici apparaîtra en attente de validation dans l'Espace gestion.
-            Une fois validé, il n'apparaîtra pas dans le suivi des loyers.
-          </p>
+        <div style={{ padding: "24px 16px", maxWidth: "700px", margin: "0 auto", fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "10px" }}>
+            <div style={{
+              width: "48px", height: "48px", borderRadius: "50%",
+              backgroundColor: "#eaf1fb", display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: "20px", flexShrink: 0,
+            }}>➕👤</div>
+            <div>
+              <h2 style={{ color: bleuFonce, margin: 0, fontSize: "18px" }}>Ajouter un étudiant — Campus social / ESP / Claudel</h2>
+              <p style={{ color: "#777", fontSize: "13px", margin: "4px 0 0" }}>
+                L'étudiant ajouté ici apparaîtra en attente de validation dans l'Espace gestion.
+                Une fois validé, il n'apparaîtra pas dans le suivi des loyers.
+              </p>
+            </div>
+          </div>
+
           <form onSubmit={ajouterEtudiantCampus} style={{
+            marginTop: "20px",
             marginBottom: "40px",
-            backgroundColor: "#faf7f0",
+            backgroundColor: "white",
             padding: "24px",
-            borderRadius: "12px",
+            borderRadius: "16px",
+            boxShadow: "0 4px 20px rgba(13,59,102,0.08)",
           }}>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
-                Nom <span style={{ color: "#c98a2c" }}>*</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px 20px" }}>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  👤 Nom <span style={{ color: "#e0574c" }}>*</span>
+                </label>
+                <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Tine" style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  👤 Prénom <span style={{ color: "#e0574c" }}>*</span>
+                </label>
+                <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Maurice Latyr" style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  📞 Téléphone <span style={{ color: "#e0574c" }}>*</span>
+                </label>
+                <input type="tel" name="telephone" value={campusFormData.telephone} onChange={handleCampusChange} required placeholder="77 123 45 67" style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>🎓 Filière</label>
+                <input type="text" name="filiere" value={campusFormData.filiere} onChange={handleCampusChange} placeholder="Ex: Mathématiques" style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>📖 Niveau</label>
+                <input type="text" name="niveau" value={campusFormData.niveau} onChange={handleCampusChange} placeholder="Ex: Licence 2" style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  🏢 Lieu <span style={{ color: "#e0574c" }}>*</span>
+                </label>
+                <select name="lieuChambre" value={campusFormData.lieuChambre} onChange={handleCampusChange} style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }}>
+                  {LIEUX_CHAMBRE.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: "700", color: bleuFonce, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  🛏️ Numéro de chambre <span style={{ color: "#e0574c" }}>*</span>
+                </label>
+                <input type="text" name="numeroChambre" value={campusFormData.numeroChambre} onChange={handleCampusChange} required placeholder="Ex: 12" style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, backgroundColor: "white", color: "#1a1a1a", fontSize: "14px", boxSizing: "border-box" }} />
+              </div>
+            </div>
+
+            <div style={{ marginTop: "18px" }}>
+              <label
+                htmlFor="campus-certificat-input"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  border: `1.5px solid ${bleuMoyen}`,
+                  borderRadius: "12px",
+                  backgroundColor: "#eaf1fb",
+                  padding: "14px 18px",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>📄</div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>Certificat d'inscription (PDF ou image)</p>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    backgroundColor: bleuMoyen, color: "white", padding: "6px 14px",
+                    borderRadius: "20px", fontSize: "12px", fontWeight: "600", marginTop: "6px",
+                  }}>
+                    ⬆ Choisir un fichier
+                  </span>
+                  <span style={{ marginLeft: "8px", fontSize: "12px", color: "#777" }}>
+                    {campusCertificatFile ? campusCertificatFile.name : "Aucun fichier choisi"}
+                  </span>
+                </div>
+                <input
+                  id="campus-certificat-input"
+                  type="file"
+                  name="certificat"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setCampusCertificatFile(e.target.files[0])}
+                  style={{ display: "none" }}
+                />
               </label>
-              <input type="text" name="nom" value={campusFormData.nom} onChange={handleCampusChange} required placeholder="Tine" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
             </div>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
-                Prénom <span style={{ color: "#c98a2c" }}>*</span>
-              </label>
-              <input type="text" name="prenom" value={campusFormData.prenom} onChange={handleCampusChange} required placeholder="Maurice Latyr" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
-            </div>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
-                Téléphone <span style={{ color: "#c98a2c" }}>*</span>
-              </label>
-              <input type="tel" name="telephone" value={campusFormData.telephone} onChange={handleCampusChange} required placeholder="77 123 45 67" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
-            </div>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Filière</label>
-              <input type="text" name="filiere" value={campusFormData.filiere} onChange={handleCampusChange} placeholder="Ex: Mathématiques" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
-            </div>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>Niveau</label>
-              <input type="text" name="niveau" value={campusFormData.niveau} onChange={handleCampusChange} placeholder="Ex: Licence 2" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
-            </div>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
-                Lieu <span style={{ color: "#c98a2c" }}>*</span>
-              </label>
-              <select name="lieuChambre" value={campusFormData.lieuChambre} onChange={handleCampusChange} style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }}>
-                {LIEUX_CHAMBRE.map((l) => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: "22px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
-                Numéro de chambre <span style={{ color: "#c98a2c" }}>*</span>
-              </label>
-              <input type="text" name="numeroChambre" value={campusFormData.numeroChambre} onChange={handleCampusChange} required placeholder="Ex: 12" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }} />
-            </div>
-            <div style={{ marginBottom: "18px" }}>
-              <label style={{ fontSize: "14px", fontWeight: "700", color: "#1a1a1a", display: "block", marginBottom: "6px" }}>
-                Certificat d'inscription (PDF ou image)
-              </label>
-              <input
-                type="file"
-                name="certificat"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setCampusCertificatFile(e.target.files[0])}
-                style={{ fontSize: "13px" }}
-              />
-              {campusCertificatFile && (
-                <p style={{ fontSize: "12px", color: "green", marginTop: "6px" }}>
-                  Fichier sélectionné : {campusCertificatFile.name}
-                </p>
-              )}
-            </div>
+
             <button
               type="submit"
               style={{
                 width: "100%",
-                backgroundColor: bleuFonce,
+                marginTop: "22px",
+                background: `linear-gradient(135deg, ${bleuMoyen}, ${bleuFonce})`,
                 color: "white",
                 border: "none",
-                padding: "12px",
-                borderRadius: "10px",
+                padding: "14px",
+                borderRadius: "12px",
                 cursor: "pointer",
                 fontWeight: "bold",
                 fontSize: "15px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              Ajouter l'étudiant
+              ➕ Ajouter l'étudiant
             </button>
           </form>
 
-          <h2 style={{ color: bleuFonce }}>Étudiants enregistrés</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 16px" }}>
+            <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px" }}>👥</div>
+            <h2 style={{ color: bleuFonce, margin: 0, fontSize: "17px" }}>Étudiants enregistrés</h2>
+          </div>
+
           {demandes.filter((d) => d.lieuChambre).length === 0 ? (
-            <p>Aucun étudiant enregistré pour le moment.</p>
+            <p style={{ color: "#777" }}>Aucun étudiant enregistré pour le moment.</p>
           ) : (
             Object.entries(
               demandes
@@ -871,35 +969,42 @@ function App() {
                   return groupes;
                 }, {})
             ).map(([lieu, etudiants]) => (
-              <div
-                key={lieu}
-                style={{
-                  marginBottom: "18px",
-                  border: `1px solid ${bleuMoyen}`,
-                  borderRadius: "8px",
-                  padding: "14px 18px"
-                }}
-              >
-                <h3 style={{ color: bleuMoyen, marginTop: 0, marginBottom: "8px" }}>{lieu}</h3>
-                <ul style={{ margin: 0, paddingLeft: "20px" }}>
+              <div key={lieu} style={{ marginBottom: "22px" }}>
+                <h3 style={{ color: bleuMoyen, marginBottom: "10px", fontSize: "14px" }}>{lieu}</h3>
+                <div style={{ display: "grid", gap: "10px" }}>
                   {etudiants.map((e) => (
-                    <li key={e.id} style={{ marginBottom: "4px" }}>
-                      Chambre {e.numeroChambre || "?"} — {e.nom} {e.prenom} — {e.telephone} —{" "}
-                      <span style={{ fontWeight: "bold", color: couleurStatut(e.statut) }}>{e.statut}</span>
-                      {e.certificat && (
-                        <>
-                          {" — "}
-                          <button
-                            onClick={() => voirCertificat(e.certificat)}
-                            style={{ background: "none", border: "none", color: "#1e5fa8", textDecoration: "underline", cursor: "pointer", padding: 0, font: "inherit" }}
-                          >
-                            Voir le certificat
-                          </button>
-                        </>
-                      )}
-                    </li>
+                    <div
+                      key={e.id}
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: "12px",
+                        padding: "14px 18px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "14px",
+                        borderLeft: `4px solid ${e.statut === "validée" ? "#2e9e5c" : e.statut === "non validée" ? "#c0392b" : "#e0a020"}`,
+                        boxShadow: "0 2px 8px rgba(13,59,102,0.06)",
+                      }}
+                    >
+                      <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🛏️</div>
+                      <div style={{ flex: 1, fontSize: "14px", color: "#333" }}>
+                        <strong>Chambre {e.numeroChambre || "?"}</strong> — {e.nom} {e.prenom} — {e.telephone}{" "}
+                        {badgeStatut(e.statut)}
+                        {e.certificat && (
+                          <>
+                            {" "}
+                            <button
+                              onClick={() => voirCertificat(e.certificat)}
+                              style={{ background: "none", border: "none", color: bleuMoyen, textDecoration: "underline", cursor: "pointer", padding: 0, font: "inherit" }}
+                            >
+                              Voir le certificat
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ))
           )}
