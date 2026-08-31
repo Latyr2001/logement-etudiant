@@ -63,7 +63,14 @@ function DemandeForm({ onSubmitDemande }) {
         .from("demandes")
         .insert([nouvelleDemande]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") {
+          setErreur("Vous avez déjà envoyé une demande pour cet appartement avec ce numéro de carte étudiant.");
+          setEnvoiEnCours(false);
+          return;
+        }
+        throw error;
+      }
 
       onSubmitDemande({ ...nouvelleDemande, id: Date.now() });
       setEnvoye(true);
