@@ -56,6 +56,21 @@ function App() {
   const [compteMotDePasse, setCompteMotDePasse] = useState("");
   const [erreurCompte, setErreurCompte] = useState("");
   const [messageCompte, setMessageCompte] = useState("");
+  const [afficherMotDePasseCompte, setAfficherMotDePasseCompte] = useState(false);
+
+  const [modeMotDePasseOublie, setModeMotDePasseOublie] = useState(false);
+  const [emailRecuperation, setEmailRecuperation] = useState("");
+  const [erreurRecuperation, setErreurRecuperation] = useState("");
+  const [messageRecuperation, setMessageRecuperation] = useState("");
+
+  const [modeRecuperation, setModeRecuperation] = useState(false);
+  const [nouveauMotDePasse, setNouveauMotDePasse] = useState("");
+  const [afficherNouveauMotDePasse, setAfficherNouveauMotDePasse] = useState(false);
+  const [erreurNouveauMotDePasse, setErreurNouveauMotDePasse] = useState("");
+  const [messageNouveauMotDePasse, setMessageNouveauMotDePasse] = useState("");
+
+  const [afficherMotDePasseAdmin, setAfficherMotDePasseAdmin] = useState(false);
+  const [afficherMotDePasseCampus, setAfficherMotDePasseCampus] = useState(false);
 
   const EMAILJS_SERVICE_ID = "service_omlh6vq";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
@@ -113,6 +128,9 @@ function App() {
     const { data: ecouteur } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       verifierSiAdmin(session);
+      if (_event === "PASSWORD_RECOVERY") {
+        setModeRecuperation(true);
+      }
     });
 
     return () => ecouteur.subscription.unsubscribe();
@@ -249,6 +267,33 @@ function App() {
     if (error) {
       setErreurCompte("Email ou mot de passe incorrect.");
     }
+  };
+
+  const demanderReinitialisation = async (e) => {
+    e.preventDefault();
+    setErreurRecuperation("");
+    setMessageRecuperation("");
+    const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperation, {
+      redirectTo: window.location.origin,
+    });
+    if (error) {
+      setErreurRecuperation("Une erreur est survenue. Vérifie l'adresse email.");
+      return;
+    }
+    setMessageRecuperation("Un email avec un lien de réinitialisation vient de t'être envoyé.");
+  };
+
+  const definirNouveauMotDePasse = async (e) => {
+    e.preventDefault();
+    setErreurNouveauMotDePasse("");
+    setMessageNouveauMotDePasse("");
+    const { error } = await supabase.auth.updateUser({ password: nouveauMotDePasse });
+    if (error) {
+      setErreurNouveauMotDePasse("Impossible de mettre à jour le mot de passe. Réessaie.");
+      return;
+    }
+    setMessageNouveauMotDePasse("Mot de passe mis à jour ! Tu peux continuer normalement.");
+    setTimeout(() => setModeRecuperation(false), 2000);
   };
 
   // Récupère automatiquement les mois payés de l'étudiant connecté (plus besoin de ressaisir ses infos).
@@ -678,7 +723,7 @@ function App() {
           </div>
 
           <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
-            {!session ? (
+            {modeRecuperation ? (
               <div style={{
                 backgroundColor: "white",
                 border: `1.5px solid ${bleuMoyen}`,
@@ -686,41 +731,31 @@ function App() {
                 padding: "26px 24px",
                 boxShadow: "0 4px 20px rgba(13,59,102,0.06)"
               }}>
-                <h3 style={{ color: bleuFonce, marginTop: 0, textAlign: "center" }}>
-                  {modeInscription ? "Créer mon compte étudiant" : "Se connecter pour faire une demande"}
-                </h3>
+                <h3 style={{ color: bleuFonce, marginTop: 0, textAlign: "center" }}>Nouveau mot de passe</h3>
                 <p style={{ color: "#777", fontSize: "13px", textAlign: "center", marginTop: "-6px" }}>
-                  Un compte est nécessaire pour envoyer une demande de logement et suivre tes reçus de paiement.
+                  Choisis un nouveau mot de passe pour ton compte.
                 </p>
-                <form onSubmit={modeInscription ? inscrireEtudiant : connecterEtudiant}>
-                  <div style={{ marginBottom: "12px" }}>
+                <form onSubmit={definirNouveauMotDePasse}>
+                  <div style={{ marginBottom: "12px", position: "relative" }}>
                     <input
-                      type="email"
-                      placeholder="Adresse email"
-                      value={compteEmail}
-                      onChange={(e) => setCompteEmail(e.target.value)}
-                      required
-                      style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: "6px" }}>
-                    <input
-                      type="password"
-                      placeholder="Mot de passe"
-                      value={compteMotDePasse}
-                      onChange={(e) => setCompteMotDePasse(e.target.value)}
+                      type={afficherNouveauMotDePasse ? "text" : "password"}
+                      placeholder="Nouveau mot de passe"
+                      value={nouveauMotDePasse}
+                      onChange={(e) => setNouveauMotDePasse(e.target.value)}
                       required
                       minLength={6}
-                      style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "11px 40px 11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setAfficherNouveauMotDePasse(!afficherNouveauMotDePasse)}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" }}
+                    >
+                      {afficherNouveauMotDePasse ? "🙈" : "👁️"}
+                    </button>
                   </div>
-                  {modeInscription && (
-                    <p style={{ fontSize: "12px", color: "#888", margin: "0 0 12px" }}>
-                      Astuce : tu peux utiliser ton numéro de carte étudiant comme mot de passe pour t'en souvenir facilement.
-                    </p>
-                  )}
-                  {erreurCompte && <p style={{ color: "red", fontSize: "13px" }}>{erreurCompte}</p>}
-                  {messageCompte && <p style={{ color: "#1e7d3a", fontSize: "13px" }}>{messageCompte}</p>}
+                  {erreurNouveauMotDePasse && <p style={{ color: "red", fontSize: "13px" }}>{erreurNouveauMotDePasse}</p>}
+                  {messageNouveauMotDePasse && <p style={{ color: "#1e7d3a", fontSize: "13px" }}>{messageNouveauMotDePasse}</p>}
                   <button
                     type="submit"
                     style={{
@@ -735,18 +770,146 @@ function App() {
                       fontSize: "14px",
                     }}
                   >
-                    {modeInscription ? "Créer mon compte" : "Se connecter"}
+                    Valider le nouveau mot de passe
                   </button>
                 </form>
-                <p style={{ textAlign: "center", fontSize: "13px", marginTop: "14px" }}>
-                  {modeInscription ? "Déjà un compte ?" : "Pas encore de compte ?"}{" "}
-                  <button
-                    onClick={() => { setModeInscription(!modeInscription); setErreurCompte(""); setMessageCompte(""); }}
-                    style={{ background: "none", border: "none", color: bleuMoyen, textDecoration: "underline", cursor: "pointer", fontWeight: "600" }}
-                  >
-                    {modeInscription ? "Se connecter" : "Créer un compte"}
-                  </button>
-                </p>
+              </div>
+            ) : !session ? (
+              <div style={{
+                backgroundColor: "white",
+                border: `1.5px solid ${bleuMoyen}`,
+                borderRadius: "18px",
+                padding: "26px 24px",
+                boxShadow: "0 4px 20px rgba(13,59,102,0.06)"
+              }}>
+                {modeMotDePasseOublie ? (
+                  <>
+                    <h3 style={{ color: bleuFonce, marginTop: 0, textAlign: "center" }}>Mot de passe oublié</h3>
+                    <p style={{ color: "#777", fontSize: "13px", textAlign: "center", marginTop: "-6px" }}>
+                      Entre ton email, tu recevras un lien pour créer un nouveau mot de passe.
+                    </p>
+                    <form onSubmit={demanderReinitialisation}>
+                      <div style={{ marginBottom: "12px" }}>
+                        <input
+                          type="email"
+                          placeholder="Adresse email"
+                          value={emailRecuperation}
+                          onChange={(e) => setEmailRecuperation(e.target.value)}
+                          required
+                          style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      {erreurRecuperation && <p style={{ color: "red", fontSize: "13px" }}>{erreurRecuperation}</p>}
+                      {messageRecuperation && <p style={{ color: "#1e7d3a", fontSize: "13px" }}>{messageRecuperation}</p>}
+                      <button
+                        type="submit"
+                        style={{
+                          width: "100%",
+                          background: `linear-gradient(135deg, ${bleuMoyen}, ${bleuFonce})`,
+                          color: "white",
+                          border: "none",
+                          padding: "12px",
+                          borderRadius: "10px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "14px",
+                        }}
+                      >
+                        Envoyer le lien de réinitialisation
+                      </button>
+                    </form>
+                    <p style={{ textAlign: "center", fontSize: "13px", marginTop: "14px" }}>
+                      <button
+                        onClick={() => { setModeMotDePasseOublie(false); setErreurRecuperation(""); setMessageRecuperation(""); }}
+                        style={{ background: "none", border: "none", color: bleuMoyen, textDecoration: "underline", cursor: "pointer", fontWeight: "600" }}
+                      >
+                        Retour à la connexion
+                      </button>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 style={{ color: bleuFonce, marginTop: 0, textAlign: "center" }}>
+                      {modeInscription ? "Créer mon compte étudiant" : "Se connecter pour faire une demande"}
+                    </h3>
+                    <p style={{ color: "#777", fontSize: "13px", textAlign: "center", marginTop: "-6px" }}>
+                      Un compte est nécessaire pour envoyer une demande de logement et suivre tes reçus de paiement.
+                    </p>
+                    <form onSubmit={modeInscription ? inscrireEtudiant : connecterEtudiant}>
+                      <div style={{ marginBottom: "12px" }}>
+                        <input
+                          type="email"
+                          placeholder="Adresse email"
+                          value={compteEmail}
+                          onChange={(e) => setCompteEmail(e.target.value)}
+                          required
+                          style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: "6px", position: "relative" }}>
+                        <input
+                          type={afficherMotDePasseCompte ? "text" : "password"}
+                          placeholder="Mot de passe"
+                          value={compteMotDePasse}
+                          onChange={(e) => setCompteMotDePasse(e.target.value)}
+                          required
+                          minLength={6}
+                          style={{ width: "100%", padding: "11px 40px 11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setAfficherMotDePasseCompte(!afficherMotDePasseCompte)}
+                          style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" }}
+                        >
+                          {afficherMotDePasseCompte ? "🙈" : "👁️"}
+                        </button>
+                      </div>
+                      {modeInscription && (
+                        <p style={{ fontSize: "12px", color: "#888", margin: "0 0 12px" }}>
+                          Astuce : tu peux utiliser ton numéro de carte étudiant comme mot de passe pour t'en souvenir facilement.
+                        </p>
+                      )}
+                      {!modeInscription && (
+                        <p style={{ textAlign: "right", marginTop: "6px", marginBottom: "12px" }}>
+                          <button
+                            type="button"
+                            onClick={() => { setModeMotDePasseOublie(true); setErreurCompte(""); setMessageCompte(""); }}
+                            style={{ background: "none", border: "none", color: bleuMoyen, textDecoration: "underline", cursor: "pointer", fontSize: "12px" }}
+                          >
+                            Mot de passe oublié ?
+                          </button>
+                        </p>
+                      )}
+                      {erreurCompte && <p style={{ color: "red", fontSize: "13px" }}>{erreurCompte}</p>}
+                      {messageCompte && <p style={{ color: "#1e7d3a", fontSize: "13px" }}>{messageCompte}</p>}
+                      <button
+                        type="submit"
+                        style={{
+                          width: "100%",
+                          background: `linear-gradient(135deg, ${bleuMoyen}, ${bleuFonce})`,
+                          color: "white",
+                          border: "none",
+                          padding: "12px",
+                          borderRadius: "10px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "14px",
+                        }}
+                      >
+                        {modeInscription ? "Créer mon compte" : "Se connecter"}
+                      </button>
+                    </form>
+                    <p style={{ textAlign: "center", fontSize: "13px", marginTop: "14px" }}>
+                      {modeInscription ? "Déjà un compte ?" : "Pas encore de compte ?"}{" "}
+                      <button
+                        onClick={() => { setModeInscription(!modeInscription); setErreurCompte(""); setMessageCompte(""); }}
+                        style={{ background: "none", border: "none", color: bleuMoyen, textDecoration: "underline", cursor: "pointer", fontWeight: "600" }}
+                      >
+                        {modeInscription ? "Se connecter" : "Créer un compte"}
+                      </button>
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <>
@@ -809,13 +972,22 @@ function App() {
               onChange={(e) => setEmailSaisi(e.target.value)}
               style={{ width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
             />
-            <input
-              type="password"
-              placeholder="Mot de passe"
-              value={motDePasseSaisi}
-              onChange={(e) => setMotDePasseSaisi(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
-            />
+            <div style={{ position: "relative", marginBottom: "10px" }}>
+              <input
+                type={afficherMotDePasseAdmin ? "text" : "password"}
+                placeholder="Mot de passe"
+                value={motDePasseSaisi}
+                onChange={(e) => setMotDePasseSaisi(e.target.value)}
+                style={{ width: "100%", padding: "10px", paddingRight: "40px", borderRadius: "5px", border: "1px solid #ccc", boxSizing: "border-box" }}
+              />
+              <button
+                type="button"
+                onClick={() => setAfficherMotDePasseAdmin(!afficherMotDePasseAdmin)}
+                style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" }}
+              >
+                {afficherMotDePasseAdmin ? "🙈" : "👁️"}
+              </button>
+            </div>
             {erreurMdp && <p style={{ color: "red" }}>{erreurMdp}</p>}
             <button
               type="submit"
@@ -1058,13 +1230,22 @@ function App() {
           <h2 style={{ color: bleuFonce }}>Accès Campus social</h2>
           <p style={{ color: "#555" }}>Espace réservé à la gestion des chambres au campus social, à l'ESP et à Claudel.</p>
           <form onSubmit={verifierMotDePasseCampus}>
-            <input
-              type="password"
-              placeholder="Mot de passe"
-              value={motDePasseCampusSaisi}
-              onChange={(e) => setMotDePasseCampusSaisi(e.target.value)}
-              style={{ width: "100%", padding: "12px 14px", marginBottom: "10px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }}
-            />
+            <div style={{ position: "relative", marginBottom: "10px" }}>
+              <input
+                type={afficherMotDePasseCampus ? "text" : "password"}
+                placeholder="Mot de passe"
+                value={motDePasseCampusSaisi}
+                onChange={(e) => setMotDePasseCampusSaisi(e.target.value)}
+                style={{ width: "100%", padding: "12px 40px 12px 14px", borderRadius: "10px", border: "1.5px solid #1e5fa8", backgroundColor: "#fdfcf9", color: "#1a1a1a", fontSize: "15px", boxSizing: "border-box" }}
+              />
+              <button
+                type="button"
+                onClick={() => setAfficherMotDePasseCampus(!afficherMotDePasseCampus)}
+                style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" }}
+              >
+                {afficherMotDePasseCampus ? "🙈" : "👁️"}
+              </button>
+            </div>
             {erreurCampus && <p style={{ color: "red" }}>{erreurCampus}</p>}
             <button
               type="submit"
