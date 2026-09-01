@@ -47,6 +47,16 @@ function App() {
   });
   const [campusCertificatFile, setCampusCertificatFile] = useState(null);
 
+  const [recuEtudiant, setRecuEtudiant] = useState(null);
+  const [recuLoyersPayes, setRecuLoyersPayes] = useState([]);
+  const [recuErreur, setRecuErreur] = useState("");
+
+  const [modeInscription, setModeInscription] = useState(false);
+  const [compteEmail, setCompteEmail] = useState("");
+  const [compteMotDePasse, setCompteMotDePasse] = useState("");
+  const [erreurCompte, setErreurCompte] = useState("");
+  const [messageCompte, setMessageCompte] = useState("");
+
   const EMAILJS_SERVICE_ID = "service_omlh6vq";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
   const EMAILJS_PUBLIC_KEY = "1it575--ftfEqFdFS";
@@ -71,16 +81,38 @@ function App() {
     if (!error) setLoyers(data);
   };
 
+  const [session, setSession] = useState(null);
+  const [estAdmin, setEstAdmin] = useState(false);
+
+  const verifierSiAdmin = async (sessionActuelle) => {
+    if (!sessionActuelle) {
+      setEstAdmin(false);
+      setAuthentifie(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("admins")
+      .select("email")
+      .eq("email", sessionActuelle.user.email)
+      .maybeSingle();
+
+    const estAdminMaintenant = !!data;
+    setEstAdmin(estAdminMaintenant);
+    setAuthentifie(estAdminMaintenant);
+  };
+
   useEffect(() => {
     chargerDemandes();
     chargerLoyers();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthentifie(!!session);
+      setSession(session);
+      verifierSiAdmin(session);
     });
 
     const { data: ecouteur } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthentifie(!!session);
+      setSession(session);
+      verifierSiAdmin(session);
     });
 
     return () => ecouteur.subscription.unsubscribe();
@@ -190,6 +222,111 @@ function App() {
 
   const seDeconnecter = async () => {
     await supabase.auth.signOut();
+  };
+
+  const inscrireEtudiant = async (e) => {
+    e.preventDefault();
+    setErreurCompte("");
+    setMessageCompte("");
+    const { error } = await supabase.auth.signUp({
+      email: compteEmail,
+      password: compteMotDePasse,
+    });
+    if (error) {
+      setErreurCompte(error.message);
+      return;
+    }
+    setMessageCompte("Compte créé. Si une confirmation par email est requise, vérifie ta boîte mail avant de te connecter.");
+  };
+
+  const connecterEtudiant = async (e) => {
+    e.preventDefault();
+    setErreurCompte("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: compteEmail,
+      password: compteMotDePasse,
+    });
+    if (error) {
+      setErreurCompte("Email ou mot de passe incorrect.");
+    }
+  };
+
+  // Récupère automatiquement les mois payés de l'étudiant connecté (plus besoin de ressaisir ses infos).
+  const chargerRecusEtudiant = async () => {
+    if (!session || estAdmin) return;
+
+    const { data: mesDemandes } = await supabase
+      .from("demandes")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .eq("statut", "validée");
+
+    if (!mesDemandes || mesDemandes.length === 0) {
+      setRecuEtudiant(null);
+      setRecuLoyersPayes([]);
+      return;
+    }
+
+    const etudiant = mesDemandes[0];
+    setRecuEtudiant(etudiant);
+
+    const { data: mesLoyers } = await supabase
+      .from("loyers")
+      .select("*")
+      .eq("demande_id", etudiant.id)
+      .eq("paye", true);
+
+    setRecuLoyersPayes(mesLoyers || []);
+  };
+
+  useEffect(() => {
+    if (session && !estAdmin) {
+      chargerRecusEtudiant();
+    }
+  }, [session, estAdmin]);
+
+  // Ouvre un reçu de paiement imprimable (l'étudiant peut l'enregistrer en PDF via Ctrl+P).
+  const telechargerRecu = (loyer) => {
+    const fenetre = window.open("", "_blank");
+    if (!fenetre) return;
+
+    const dateGeneration = new Date().toLocaleDateString("fr-FR");
+
+    fenetre.document.write(`
+      <html>
+        <head>
+          <title>Reçu de paiement</title>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1a1a1a; }
+            .carte { max-width: 480px; margin: 0 auto; border: 2px solid #0d3b66; border-radius: 14px; padding: 30px; }
+            h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
+            .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; }
+            td { padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
+            td:first-child { color: #555; font-weight: 600; width: 45%; }
+            .statut { margin-top: 24px; text-align: center; background: #dcf5e3; color: #1e7d3a; font-weight: bold; padding: 10px; border-radius: 8px; }
+            .pied { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
+          </style>
+        </head>
+        <body onload="window.print()">
+          <div class="carte">
+            <h1>Reçu de paiement — Keur Bou Mag Bii</h1>
+            <p class="sous-titre">AEERN — Amicale des Étudiants et Élèves Ressortissants de Ndiaganiao</p>
+            <table>
+              <tr><td>Nom</td><td>${recuEtudiant.nom}</td></tr>
+              <tr><td>Prénom</td><td>${recuEtudiant.prenom}</td></tr>
+              <tr><td>Numéro de carte étudiant</td><td>${recuEtudiant.numeroCarteEtudiant}</td></tr>
+              <tr><td>Mois concerné</td><td>${loyer.mois} ${loyer.annee}</td></tr>
+              <tr><td>Date d'émission du reçu</td><td>${dateGeneration}</td></tr>
+            </table>
+            <div class="statut">✔ Loyer payé</div>
+            <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
+          </div>
+        </body>
+      </html>
+    `);
+    fenetre.document.close();
   };
 
   const verifierMotDePasseCampus = (e) => {
@@ -492,13 +629,141 @@ function App() {
                 🐧 Payer avec Wave
               </a>
             </div>
+
+            {/* Bloc reçu de paiement — visible uniquement si connecté */}
+            {session && !estAdmin && (
+              <div style={{
+                maxWidth: "700px",
+                margin: "20px auto 0",
+                backgroundColor: "white",
+                border: `1.5px solid ${bleuMoyen}`,
+                borderRadius: "18px",
+                padding: "24px",
+                textAlign: "left",
+                boxShadow: "0 4px 20px rgba(13,59,102,0.06)"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>🧾</div>
+                  <div>
+                    <h3 style={{ color: bleuFonce, margin: 0, fontSize: "16px" }}>Mes reçus de paiement</h3>
+                    <p style={{ color: "#777", fontSize: "13px", margin: "2px 0 0" }}>
+                      Connecté en tant que {session.user.email}
+                    </p>
+                  </div>
+                </div>
+
+                {!recuEtudiant ? (
+                  <p style={{ fontSize: "13px", color: "#777" }}>
+                    Aucun logement validé associé à ton compte pour le moment.
+                  </p>
+                ) : recuLoyersPayes.length === 0 ? (
+                  <p style={{ fontSize: "13px", color: "#777" }}>Aucun mois payé pour le moment.</p>
+                ) : (
+                  <div style={{ display: "grid", gap: "8px" }}>
+                    {recuLoyersPayes.map((l) => (
+                      <div key={l.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#eaf1fb", padding: "10px 14px", borderRadius: "10px" }}>
+                        <span style={{ fontSize: "14px", color: bleuFonce, fontWeight: "600" }}>{l.mois} {l.annee}</span>
+                        <button
+                          onClick={() => telechargerRecu(l)}
+                          style={{ backgroundColor: bleuMoyen, color: "white", border: "none", padding: "6px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                        >
+                          ⬇ Télécharger le reçu
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
-            <p style={{ textAlign: "center", color: "#555" }}>
-              Bienvenue sur la plateforme officielle de demande de logement.
-            </p>
-            <DemandeForm onSubmitDemande={ajouterDemande} />
+            {!session ? (
+              <div style={{
+                backgroundColor: "white",
+                border: `1.5px solid ${bleuMoyen}`,
+                borderRadius: "18px",
+                padding: "26px 24px",
+                boxShadow: "0 4px 20px rgba(13,59,102,0.06)"
+              }}>
+                <h3 style={{ color: bleuFonce, marginTop: 0, textAlign: "center" }}>
+                  {modeInscription ? "Créer mon compte étudiant" : "Se connecter pour faire une demande"}
+                </h3>
+                <p style={{ color: "#777", fontSize: "13px", textAlign: "center", marginTop: "-6px" }}>
+                  Un compte est nécessaire pour envoyer une demande de logement et suivre tes reçus de paiement.
+                </p>
+                <form onSubmit={modeInscription ? inscrireEtudiant : connecterEtudiant}>
+                  <div style={{ marginBottom: "12px" }}>
+                    <input
+                      type="email"
+                      placeholder="Adresse email"
+                      value={compteEmail}
+                      onChange={(e) => setCompteEmail(e.target.value)}
+                      required
+                      style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: "6px" }}>
+                    <input
+                      type="password"
+                      placeholder="Mot de passe"
+                      value={compteMotDePasse}
+                      onChange={(e) => setCompteMotDePasse(e.target.value)}
+                      required
+                      minLength={6}
+                      style={{ width: "100%", padding: "11px 12px", borderRadius: "10px", border: `1.5px solid ${bleuMoyen}`, fontSize: "14px", boxSizing: "border-box" }}
+                    />
+                  </div>
+                  {modeInscription && (
+                    <p style={{ fontSize: "12px", color: "#888", margin: "0 0 12px" }}>
+                      Astuce : tu peux utiliser ton numéro de carte étudiant comme mot de passe pour t'en souvenir facilement.
+                    </p>
+                  )}
+                  {erreurCompte && <p style={{ color: "red", fontSize: "13px" }}>{erreurCompte}</p>}
+                  {messageCompte && <p style={{ color: "#1e7d3a", fontSize: "13px" }}>{messageCompte}</p>}
+                  <button
+                    type="submit"
+                    style={{
+                      width: "100%",
+                      background: `linear-gradient(135deg, ${bleuMoyen}, ${bleuFonce})`,
+                      color: "white",
+                      border: "none",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      fontWeight: "bold",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {modeInscription ? "Créer mon compte" : "Se connecter"}
+                  </button>
+                </form>
+                <p style={{ textAlign: "center", fontSize: "13px", marginTop: "14px" }}>
+                  {modeInscription ? "Déjà un compte ?" : "Pas encore de compte ?"}{" "}
+                  <button
+                    onClick={() => { setModeInscription(!modeInscription); setErreurCompte(""); setMessageCompte(""); }}
+                    style={{ background: "none", border: "none", color: bleuMoyen, textDecoration: "underline", cursor: "pointer", fontWeight: "600" }}
+                  >
+                    {modeInscription ? "Se connecter" : "Créer un compte"}
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <p style={{ color: "#555", fontSize: "13px", margin: 0 }}>
+                    Connecté en tant que <strong>{session.user.email}</strong>
+                  </p>
+                  <button
+                    onClick={seDeconnecter}
+                    style={{ backgroundColor: "#555", color: "white", border: "none", padding: "6px 14px", borderRadius: "16px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+                <DemandeForm onSubmitDemande={ajouterDemande} userId={session.user.id} />
+              </>
+            )}
           </div>
 
           <div style={{

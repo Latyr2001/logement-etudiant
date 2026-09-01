@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "./supabaseClient";
 
-function DemandeForm({ onSubmitDemande }) {
+function DemandeForm({ onSubmitDemande, userId }) {
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -57,6 +57,7 @@ function DemandeForm({ onSubmitDemande }) {
         ...formData,
         certificat: certificatUrl,
         statut: "en attente",
+        user_id: userId,
       };
 
       const { error } = await supabase
