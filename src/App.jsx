@@ -72,7 +72,7 @@ function App() {
   const [afficherMotDePasseAdmin, setAfficherMotDePasseAdmin] = useState(false);
   const [afficherMotDePasseCampus, setAfficherMotDePasseCampus] = useState(false);
 
-  const EMAILJS_SERVICE_ID = "service_omlh6vq";
+  const EMAILJS_SERVICE_ID = "service_1pbl2tm";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
   const EMAILJS_PUBLIC_KEY = "1it575--ftfEqFdFS";
 
