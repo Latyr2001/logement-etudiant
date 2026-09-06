@@ -330,8 +330,10 @@ function App() {
     }
   }, [session, estAdmin]);
 
-  // Ouvre un reçu de paiement imprimable (l'étudiant peut l'enregistrer en PDF via Ctrl+P).
-  const telechargerRecu = (loyer) => {
+  // Ouvre un reçu de paiement. Si imprimerDirectement est vrai, lance directement
+  // l'impression (utile pour "télécharger tous mes reçus"). Sinon, affiche le reçu
+  // avec un bouton "Télécharger / Imprimer" pour que l'étudiant puisse d'abord le consulter.
+  const ouvrirRecu = (loyer, imprimerDirectement) => {
     const fenetre = window.open("", "_blank");
     if (!fenetre) return;
 
@@ -352,9 +354,10 @@ function App() {
             td:first-child { color: #555; font-weight: 600; width: 45%; }
             .statut { margin-top: 24px; text-align: center; background: #dcf5e3; color: #1e7d3a; font-weight: bold; padding: 10px; border-radius: 8px; }
             .pied { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
+            .btn-imprimer { display: block; width: 100%; margin-top: 20px; padding: 12px; background: #0d3b66; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
           </style>
         </head>
-        <body onload="window.print()">
+        <body ${imprimerDirectement ? 'onload="window.print()"' : ''}>
           <div class="carte">
             <h1>Reçu de paiement — Keur Bou Mag Bii</h1>
             <p class="sous-titre">AEERN — Amicale des Étudiants et Élèves Ressortissants de Ndiaganiao</p>
@@ -367,6 +370,7 @@ function App() {
             </table>
             <div class="statut">✔ Loyer payé</div>
             <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
+            ${!imprimerDirectement ? '<button class="btn-imprimer" onclick="window.print()">⬇ Télécharger / Imprimer ce reçu</button>' : ''}
           </div>
         </body>
       </html>
@@ -619,8 +623,8 @@ function App() {
               />
             </div>
 
-            {/* Bloc paiement + reçus — visible uniquement si connecté */}
-            {session && !estAdmin && (
+            {/* Bloc paiement + reçus — visible pour tout compte connecté (étudiant ou admin) */}
+            {session && (
               <div style={{
                 maxWidth: "700px",
                 margin: "34px auto 0",
@@ -696,17 +700,25 @@ function App() {
                       {recuLoyersPayes.map((l) => (
                         <div key={l.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#eaf1fb", padding: "10px 14px", borderRadius: "10px" }}>
                           <span style={{ fontSize: "14px", color: bleuFonce, fontWeight: "600" }}>{l.mois} {l.annee}</span>
-                          <button
-                            onClick={() => telechargerRecu(l)}
-                            style={{ backgroundColor: bleuMoyen, color: "white", border: "none", padding: "6px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
-                          >
-                            ⬇ Télécharger le reçu
-                          </button>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button
+                              onClick={() => ouvrirRecu(l, false)}
+                              style={{ backgroundColor: "#eaf1fb", color: bleuFonce, border: `1px solid ${bleuMoyen}`, padding: "6px 12px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                            >
+                              👁 Voir
+                            </button>
+                            <button
+                              onClick={() => ouvrirRecu(l, true)}
+                              style={{ backgroundColor: bleuMoyen, color: "white", border: "none", padding: "6px 12px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                            >
+                              ⬇ Télécharger
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
                     <button
-                      onClick={() => recuLoyersPayes.forEach((l) => telechargerRecu(l))}
+                      onClick={() => recuLoyersPayes.forEach((l) => ouvrirRecu(l, true))}
                       style={{
                         width: "100%",
                         backgroundColor: bleuFonce,
