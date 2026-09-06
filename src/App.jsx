@@ -619,67 +619,11 @@ function App() {
               />
             </div>
 
-            {/* Bloc paiement du loyer via Wave */}
-            <div style={{
-              maxWidth: "700px",
-              margin: "34px auto 0",
-              backgroundColor: "white",
-              border: `1.5px solid ${bleuMoyen}`,
-              borderRadius: "18px",
-              padding: "20px 24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "16px",
-              boxShadow: "0 4px 20px rgba(13,59,102,0.06)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "14px", textAlign: "left" }}>
-                <div style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "12px",
-                  backgroundColor: "#eaf1fb",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "20px",
-                  flexShrink: 0,
-                }}>👛</div>
-                <div>
-                  <h3 style={{ color: bleuFonce, margin: 0, fontSize: "17px" }}>Payer mon loyer</h3>
-                  <p style={{ color: "#777", fontSize: "13px", margin: "4px 0 0" }}>
-                    Réglez votre loyer en toute sécurité via Wave.
-                  </p>
-                </div>
-              </div>
-              <a
-                href={LIEN_WAVE}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
-                  color: "white",
-                  padding: "12px 26px",
-                  borderRadius: "25px",
-                  fontWeight: "bold",
-                  textDecoration: "none",
-                  fontSize: "15px",
-                  whiteSpace: "nowrap"
-                }}
-              >
-                🐧 Payer avec Wave
-              </a>
-            </div>
-
-            {/* Bloc reçu de paiement — visible uniquement si connecté */}
+            {/* Bloc paiement + reçus — visible uniquement si connecté */}
             {session && !estAdmin && (
               <div style={{
                 maxWidth: "700px",
-                margin: "20px auto 0",
+                margin: "34px auto 0",
                 backgroundColor: "white",
                 border: `1.5px solid ${bleuMoyen}`,
                 borderRadius: "18px",
@@ -690,13 +634,56 @@ function App() {
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
                   <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>🧾</div>
                   <div>
-                    <h3 style={{ color: bleuFonce, margin: 0, fontSize: "16px" }}>Mes reçus de paiement</h3>
+                    <h3 style={{ color: bleuFonce, margin: 0, fontSize: "16px" }}>Mon compte</h3>
                     <p style={{ color: "#777", fontSize: "13px", margin: "2px 0 0" }}>
                       Connecté en tant que {session.user.email}
                     </p>
                   </div>
                 </div>
 
+                {/* Sous-bloc : payer le loyer via Wave */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "14px",
+                  backgroundColor: "#eaf1fb",
+                  borderRadius: "14px",
+                  padding: "16px 18px",
+                  marginBottom: "18px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "38px", height: "38px", borderRadius: "10px", backgroundColor: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>👛</div>
+                    <div>
+                      <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>Payer mon loyer</p>
+                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#777" }}>Réglez votre loyer en toute sécurité via Wave.</p>
+                    </div>
+                  </div>
+                  <a
+                    href={LIEN_WAVE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
+                      color: "white",
+                      padding: "10px 22px",
+                      borderRadius: "25px",
+                      fontWeight: "bold",
+                      textDecoration: "none",
+                      fontSize: "13px",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    🐧 Payer avec Wave
+                  </a>
+                </div>
+
+                {/* Sous-bloc : reçus de paiement */}
+                <h4 style={{ color: bleuFonce, fontSize: "14px", margin: "0 0 10px" }}>Mes reçus de paiement</h4>
                 {!recuEtudiant ? (
                   <p style={{ fontSize: "13px", color: "#777" }}>
                     Aucun logement validé associé à ton compte pour le moment.
@@ -704,19 +691,37 @@ function App() {
                 ) : recuLoyersPayes.length === 0 ? (
                   <p style={{ fontSize: "13px", color: "#777" }}>Aucun mois payé pour le moment.</p>
                 ) : (
-                  <div style={{ display: "grid", gap: "8px" }}>
-                    {recuLoyersPayes.map((l) => (
-                      <div key={l.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#eaf1fb", padding: "10px 14px", borderRadius: "10px" }}>
-                        <span style={{ fontSize: "14px", color: bleuFonce, fontWeight: "600" }}>{l.mois} {l.annee}</span>
-                        <button
-                          onClick={() => telechargerRecu(l)}
-                          style={{ backgroundColor: bleuMoyen, color: "white", border: "none", padding: "6px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
-                        >
-                          ⬇ Télécharger le reçu
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <div style={{ display: "grid", gap: "8px", marginBottom: "14px" }}>
+                      {recuLoyersPayes.map((l) => (
+                        <div key={l.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#eaf1fb", padding: "10px 14px", borderRadius: "10px" }}>
+                          <span style={{ fontSize: "14px", color: bleuFonce, fontWeight: "600" }}>{l.mois} {l.annee}</span>
+                          <button
+                            onClick={() => telechargerRecu(l)}
+                            style={{ backgroundColor: bleuMoyen, color: "white", border: "none", padding: "6px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                          >
+                            ⬇ Télécharger le reçu
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => recuLoyersPayes.forEach((l) => telechargerRecu(l))}
+                      style={{
+                        width: "100%",
+                        backgroundColor: bleuFonce,
+                        color: "white",
+                        border: "none",
+                        padding: "10px",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                      }}
+                    >
+                      ⬇ Télécharger tous mes reçus de paiement
+                    </button>
+                  </>
                 )}
               </div>
             )}
