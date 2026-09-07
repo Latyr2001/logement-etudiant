@@ -10,17 +10,10 @@ const MOIS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-// Ordre d'affichage pour le suivi des loyers : l'année scolaire
-// commence en octobre, donc on décale l'affichage (le calcul interne
-// des loyers, lui, continue d'utiliser MOIS_FR tel quel car il dépend
-// de getMonth() de JavaScript, qui compte Janvier = 0).
 const ORDRE_ANNEE_SCOLAIRE = [...MOIS_FR.slice(9), ...MOIS_FR.slice(0, 9)];
 
-// Lieux possibles pour les chambres gérées hors formulaire (campus social, ESP, Claudel)
 const LIEUX_CHAMBRE = ["Campus social", "ESP", "Claudel"];
 
-// ⚠️ Mot de passe fixe pour l'espace "Campus social" — à changer ici si besoin.
-// Attention : visible dans le code source, ne pas réutiliser un mot de passe sensible.
 const MOT_DE_PASSE_CAMPUS = "AEERN-campus2026";
 
 function App() {
@@ -296,7 +289,6 @@ function App() {
     setTimeout(() => setModeRecuperation(false), 2000);
   };
 
-  // Récupère automatiquement les mois payés de l'étudiant connecté (plus besoin de ressaisir ses infos).
   const chargerRecusEtudiant = async () => {
     if (!session || estAdmin) return;
 
@@ -330,9 +322,6 @@ function App() {
     }
   }, [session, estAdmin]);
 
-  // Ouvre un reçu de paiement. Si imprimerDirectement est vrai, lance directement
-  // l'impression (utile pour "télécharger tous mes reçus"). Sinon, affiche le reçu
-  // avec un bouton "Télécharger / Imprimer" pour que l'étudiant puisse d'abord le consulter.
   const ouvrirRecu = (loyer, imprimerDirectement) => {
     const fenetre = window.open("", "_blank");
     if (!fenetre) return;
@@ -494,18 +483,12 @@ function App() {
     );
   };
 
-  // ⚠️ Remplacez ce lien par votre lien marchand Wave
-  // (ex: "https://pay.wave.com/m/M_xxxxxxx/c/sn/")
   const LIEN_WAVE = "https://pay.wave.com/m/M_xxxxxxx/c/sn/";
 
   const demandesValidees = demandes.filter((d) => d.statut === "validée");
-  // Les étudiants logés au campus social/ESP/Claudel ne paient pas leur loyer
-  // sur la plateforme : on les sépare du reste pour les exclure du suivi des loyers.
   const demandesValideesAppartement = demandesValidees.filter((d) => !d.lieuChambre);
   const demandesValideesCampus = demandesValidees.filter((d) => d.lieuChambre);
 
-  // Regroupe les étudiants validés directement par le quartier qu'ils ont
-  // choisi dans leur demande — pas besoin de ressaisir l'appartement.
   const grouperParAppartement = () => {
     const groupes = {};
     demandesValideesAppartement.forEach((d) => {
@@ -516,7 +499,6 @@ function App() {
     return groupes;
   };
 
-  // Regroupe les étudiants du campus social/ESP/Claudel par lieu.
   const grouperParChambre = () => {
     const groupes = {};
     demandesValideesCampus.forEach((d) => {
@@ -609,7 +591,6 @@ function App() {
               des étudiants ressortissants de Ndiaganiao à l'UCAD
             </p>
 
-            {/* Photo de l'équipe, avec le bas arrondi comme sur l'affiche */}
             <div style={{
               maxWidth: "700px",
               margin: "0 auto",
@@ -623,7 +604,6 @@ function App() {
               />
             </div>
 
-            {/* Bloc paiement + reçus — visible pour tout compte connecté (étudiant ou admin) */}
             {session && (
               <div style={{
                 maxWidth: "700px",
@@ -645,7 +625,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Sous-bloc : payer le loyer via Wave */}
                 <div style={{
                   display: "flex",
                   alignItems: "center",
@@ -686,7 +665,6 @@ function App() {
                   </a>
                 </div>
 
-                {/* Sous-bloc : reçus de paiement */}
                 <h4 style={{ color: bleuFonce, fontSize: "14px", margin: "0 0 10px" }}>Mes reçus de paiement</h4>
                 {!recuEtudiant ? (
                   <p style={{ fontSize: "13px", color: "#777" }}>
@@ -966,6 +944,44 @@ function App() {
                 <p style={{ fontSize: "13px", color: "#cfe0f5" }}>{carte.texte}</p>
               </div>
             ))}
+          </div>
+
+          {/* Bloc contact / assistance */}
+          <div style={{ backgroundColor: "#f0f6fc", padding: "44px 20px" }}>
+            <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}>
+              <h2 style={{ color: bleuFonce, fontSize: "20px", marginBottom: "6px" }}>Besoin d'aide ?</h2>
+              <p style={{ color: "#777", fontSize: "13px", marginBottom: "26px" }}>
+                Notre équipe reste à votre disposition pour toute question.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "16px" }}>
+                <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", minWidth: "220px", flex: "1 1 220px", maxWidth: "260px", boxShadow: "0 4px 20px rgba(13,59,102,0.06)", textAlign: "left" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🏠</div>
+                    <h3 style={{ color: bleuFonce, margin: 0, fontSize: "14px" }}>Questions logements</h3>
+                  </div>
+                  <p style={{ color: "#777", fontSize: "12px", margin: "0 0 4px" }}>PCS</p>
+                  <a href="tel:+221766825410" style={{ color: bleuMoyen, fontWeight: "bold", fontSize: "15px", textDecoration: "none" }}>76 682 54 10</a>
+                </div>
+
+                <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", minWidth: "220px", flex: "1 1 220px", maxWidth: "260px", boxShadow: "0 4px 20px rgba(13,59,102,0.06)", textAlign: "left" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🛠️</div>
+                    <h3 style={{ color: bleuFonce, margin: 0, fontSize: "14px" }}>Service technique</h3>
+                  </div>
+                  <p style={{ color: "#777", fontSize: "12px", margin: "0 0 4px" }}>Maurice Latyr Tine</p>
+                  <a href="tel:+221767602354" style={{ color: bleuMoyen, fontWeight: "bold", fontSize: "15px", textDecoration: "none" }}>76 760 23 54</a>
+                </div>
+
+                <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px 24px", minWidth: "220px", flex: "1 1 220px", maxWidth: "260px", boxShadow: "0 4px 20px rgba(13,59,102,0.06)", textAlign: "left" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: "#eaf1fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🛠️</div>
+                    <h3 style={{ color: bleuFonce, margin: 0, fontSize: "14px" }}>Service technique</h3>
+                  </div>
+                  <p style={{ color: "#777", fontSize: "12px", margin: "0 0 4px" }}>Ibra Dione</p>
+                  <a href="tel:+221763291003" style={{ color: bleuMoyen, fontWeight: "bold", fontSize: "15px", textDecoration: "none" }}>+221 76 329 10 03</a>
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}
