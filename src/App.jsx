@@ -65,6 +65,10 @@ function App() {
   const [afficherMotDePasseAdmin, setAfficherMotDePasseAdmin] = useState(false);
   const [afficherMotDePasseCampus, setAfficherMotDePasseCampus] = useState(false);
 
+  const [montantLoyer, setMontantLoyer] = useState(null);
+  const [nouveauMontant, setNouveauMontant] = useState("");
+  const [messageMontant, setMessageMontant] = useState("");
+
   const EMAILJS_SERVICE_ID = "service_1pbl2tm";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
   const EMAILJS_PUBLIC_KEY = "1it575--ftfEqFdFS";
@@ -87,6 +91,38 @@ function App() {
       .order("annee", { ascending: true });
 
     if (!error) setLoyers(data);
+  };
+
+  const chargerMontantLoyer = async () => {
+    const { data, error } = await supabase
+      .from("parametres")
+      .select("montant_loyer")
+      .eq("id", 1)
+      .single();
+    if (!error && data) {
+      setMontantLoyer(data.montant_loyer);
+      setNouveauMontant(data.montant_loyer.toString());
+    }
+  };
+
+  const modifierMontantLoyer = async (e) => {
+    e.preventDefault();
+    setMessageMontant("");
+    const valeur = parseInt(nouveauMontant, 10);
+    if (isNaN(valeur) || valeur <= 0) {
+      setMessageMontant("Montant invalide.");
+      return;
+    }
+    const { error } = await supabase
+      .from("parametres")
+      .update({ montant_loyer: valeur })
+      .eq("id", 1);
+    if (error) {
+      setMessageMontant("Erreur lors de la mise à jour.");
+      return;
+    }
+    setMontantLoyer(valeur);
+    setMessageMontant("Montant mis à jour !");
   };
 
   const [session, setSession] = useState(null);
@@ -112,6 +148,7 @@ function App() {
   useEffect(() => {
     chargerDemandes();
     chargerLoyers();
+    chargerMontantLoyer();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -640,7 +677,9 @@ function App() {
                     <div style={{ width: "38px", height: "38px", borderRadius: "10px", backgroundColor: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>👛</div>
                     <div>
                       <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>Payer mon loyer</p>
-                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#777" }}>Réglez votre loyer en toute sécurité via Wave.</p>
+                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#777" }}>
+                        {montantLoyer ? `${montantLoyer.toLocaleString("fr-FR")} FCFA / mois — ` : ""}Réglez votre loyer en toute sécurité via Wave.
+                      </p>
                     </div>
                   </div>
                   <a
@@ -1054,6 +1093,22 @@ function App() {
               >
                 ⏻ Se déconnecter
               </button>
+            </div>
+
+            <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", marginBottom: "24px", maxWidth: "360px" }}>
+              <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 8px" }}>💰 Montant actuel du loyer</p>
+              <form onSubmit={modifierMontantLoyer} style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="number"
+                  value={nouveauMontant}
+                  onChange={(e) => setNouveauMontant(e.target.value)}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "none", fontSize: "14px" }}
+                />
+                <button type="submit" style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+                  Enregistrer
+                </button>
+              </form>
+              {messageMontant && <p style={{ color: "#7fd894", fontSize: "12px", marginTop: "8px" }}>{messageMontant}</p>}
             </div>
 
             {chargement ? (
