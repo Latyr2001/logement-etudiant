@@ -553,6 +553,110 @@ function App() {
     window.open(data.signedUrl, "_blank");
   };
 
+  const telechargerListeAppartements = () => {
+    const fenetre = window.open("", "_blank");
+    if (!fenetre) return;
+
+    const dateGeneration = new Date().toLocaleDateString("fr-FR");
+    const groupes = grouperParAppartement();
+
+    let contenuGroupes = "";
+    Object.entries(groupes).forEach(([nomAppart, etudiants]) => {
+      contenuGroupes += `
+        <h3>${nomAppart} (${etudiants.length} étudiant${etudiants.length > 1 ? "s" : ""})</h3>
+        <table>
+          <thead>
+            <tr><th>Nom</th><th>Prénom</th><th>Téléphone</th><th>Filière</th><th>Niveau</th></tr>
+          </thead>
+          <tbody>
+            ${etudiants.map((e) => `
+              <tr>
+                <td>${e.nom}</td>
+                <td>${e.prenom}</td>
+                <td>${e.telephone}</td>
+                <td>${e.filiere || "-"}</td>
+                <td>${e.niveau || "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    });
+
+    fenetre.document.write(`
+      <html>
+        <head>
+          <title>Logements par appartement</title>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; }
+            h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
+            .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
+            h3 { color: #1e5fa8; margin-top: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            th, td { padding: 8px; font-size: 13px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #eaf1fb; }
+            .pied { margin-top: 24px; font-size: 11px; color: #999; }
+          </style>
+        </head>
+        <body onload="window.print()">
+          <h1>Logements par appartement — Keur Bou Mag Bii</h1>
+          <p class="sous-titre">AEERN — Liste des étudiants avec logement validé — généré le ${dateGeneration}</p>
+          ${contenuGroupes || "<p>Aucun étudiant avec un logement validé.</p>"}
+          <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
+        </body>
+      </html>
+    `);
+    fenetre.document.close();
+  };
+
+  const telechargerSuiviLoyers = () => {
+    const fenetre = window.open("", "_blank");
+    if (!fenetre) return;
+
+    const dateGeneration = new Date().toLocaleDateString("fr-FR");
+
+    const lignes = demandesValideesAppartement.map((d) => {
+      const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
+      const cellules = ORDRE_ANNEE_SCOLAIRE.map((m) => {
+        const loyerMois = loyersEtudiant.find((l) => l.mois === m);
+        const paye = loyerMois?.paye;
+        return `<td style="text-align:center; color:${paye ? "#2e7d32" : "#c0392b"}; font-weight:bold;">${paye ? "✔" : "✘"}</td>`;
+      }).join("");
+      return `<tr><td>${d.nom} ${d.prenom}</td>${cellules}</tr>`;
+    }).join("");
+
+    const entetesMois = ORDRE_ANNEE_SCOLAIRE.map((m) => `<th>${m.slice(0, 3)}</th>`).join("");
+
+    fenetre.document.write(`
+      <html>
+        <head>
+          <title>Suivi des loyers</title>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; }
+            h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
+            .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { padding: 6px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #eaf1fb; }
+            .pied { margin-top: 24px; font-size: 11px; color: #999; }
+          </style>
+        </head>
+        <body onload="window.print()">
+          <h1>Suivi des loyers — Keur Bou Mag Bii</h1>
+          <p class="sous-titre">AEERN — Mois payés (✔) et non payés (✘) — généré le ${dateGeneration}</p>
+          <table>
+            <thead><tr><th>Étudiant</th>${entetesMois}</tr></thead>
+            <tbody>${lignes || `<tr><td colspan="13">Aucun étudiant avec un logement validé.</td></tr>`}</tbody>
+          </table>
+          <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
+        </body>
+      </html>
+    `);
+    fenetre.document.close();
+  };
+
   const bleuFonce = "#0d3b66";
   const bleuMoyen = "#1e5fa8";
   const bleuNuit = "#0c1f4b";
@@ -1256,9 +1360,17 @@ function App() {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 14px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🏢</div>
-              <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Logements par appartement</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "30px 0 14px", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🏢</div>
+                <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Logements par appartement</h2>
+              </div>
+              <button
+                onClick={telechargerListeAppartements}
+                style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+              >
+                ⬇ Télécharger en PDF
+              </button>
             </div>
             {demandesValideesAppartement.length === 0 ? (
               <p style={{ color: "#cfd8ec" }}>Aucun étudiant avec un logement validé pour le moment.</p>
@@ -1332,9 +1444,17 @@ function App() {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 14px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🏠</div>
-              <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Suivi des loyers</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "30px 0 14px", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🏠</div>
+                <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Suivi des loyers</h2>
+              </div>
+              <button
+                onClick={telechargerSuiviLoyers}
+                style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+              >
+                ⬇ Télécharger en PDF
+              </button>
             </div>
             {demandesValideesAppartement.length === 0 ? (
               <p style={{ color: "#cfd8ec" }}>Aucun étudiant avec un logement validé pour le moment.</p>
@@ -1630,4 +1750,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App; i
