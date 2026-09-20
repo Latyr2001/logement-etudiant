@@ -69,6 +69,12 @@ function App() {
   const [nouveauMontant, setNouveauMontant] = useState("");
   const [messageMontant, setMessageMontant] = useState("");
 
+  const [montantCaution, setMontantCaution] = useState(null);
+  const [nouvelleCaution, setNouvelleCaution] = useState("");
+  const [messageCaution, setMessageCaution] = useState("");
+  const [paiementEnCours, setPaiementEnCours] = useState(false);
+  const [erreurPaiement, setErreurPaiement] = useState("");
+
   const EMAILJS_SERVICE_ID = "service_1pbl2tm";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
   const EMAILJS_PUBLIC_KEY = "1it575--ftfEqFdFS";
@@ -96,12 +102,14 @@ function App() {
   const chargerMontantLoyer = async () => {
     const { data, error } = await supabase
       .from("parametres")
-      .select("montant_loyer")
+      .select("montant_loyer, montant_caution")
       .eq("id", 1)
       .single();
     if (!error && data) {
       setMontantLoyer(data.montant_loyer);
       setNouveauMontant(data.montant_loyer.toString());
+      setMontantCaution(data.montant_caution);
+      setNouvelleCaution(data.montant_caution.toString());
     }
   };
 
@@ -123,6 +131,57 @@ function App() {
     }
     setMontantLoyer(valeur);
     setMessageMontant("Montant mis à jour !");
+  };
+
+  const modifierMontantCaution = async (e) => {
+    e.preventDefault();
+    setMessageCaution("");
+    const valeur = parseInt(nouvelleCaution, 10);
+    if (isNaN(valeur) || valeur <= 0) {
+      setMessageCaution("Montant invalide.");
+      return;
+    }
+    const { error } = await supabase
+      .from("parametres")
+      .update({ montant_caution: valeur })
+      .eq("id", 1);
+    if (error) {
+      setMessageCaution("Erreur lors de la mise à jour.");
+      return;
+    }
+    setMontantCaution(valeur);
+    setMessageCaution("Montant mis à jour !");
+  };
+
+  const payerLoyer = async () => {
+    setErreurPaiement("");
+    setPaiementEnCours(true);
+    try {
+      const { data: { session: sessionActuelle } } = await supabase.auth.getSession();
+      if (!sessionActuelle) {
+        setErreurPaiement("Tu dois être connecté pour payer.");
+        setPaiementEnCours(false);
+        return;
+      }
+      const reponse = await fetch(
+        "https://mbzwufymuuikwestidei.supabase.co/functions/v1/wave-checkout",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${sessionActuelle.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const resultat = await reponse.json();
+      if (!reponse.ok || !resultat.url) {
+        throw new Error(resultat.error || "Erreur lors de la création du paiement.");
+      }
+      window.location.href = resultat.url;
+    } catch (err) {
+      setErreurPaiement(err.message);
+      setPaiementEnCours(false);
+    }
   };
 
   const [session, setSession] = useState(null);
@@ -682,10 +741,9 @@ function App() {
                       </p>
                     </div>
                   </div>
-                  <a
-                    href={LIEN_WAVE}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={payerLoyer}
+                    disabled={paiementEnCours}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -695,14 +753,18 @@ function App() {
                       padding: "10px 22px",
                       borderRadius: "25px",
                       fontWeight: "bold",
-                      textDecoration: "none",
+                      border: "none",
+                      cursor: paiementEnCours ? "not-allowed" : "pointer",
                       fontSize: "13px",
-                      whiteSpace: "nowrap"
+                      whiteSpace: "nowrap",
+                      opacity: paiementEnCours ? 0.7 : 1,
                     }}
                   >
-                    🐧 Payer avec Wave
-                  </a>
+                    🐧 {paiementEnCours ? "Redirection..." : "Payer avec Wave"}
+                  </button>
                 </div>
+
+                {erreurPaiement && <p style={{ color: "#c0392b", fontSize: "12px", margin: "0 0 12px" }}>{erreurPaiement}</p>}
 
                 <h4 style={{ color: bleuFonce, fontSize: "14px", margin: "0 0 10px" }}>Mes reçus de paiement</h4>
                 {!recuEtudiant ? (
@@ -1095,20 +1157,38 @@ function App() {
               </button>
             </div>
 
-            <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", marginBottom: "24px", maxWidth: "360px" }}>
-              <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 8px" }}>💰 Montant actuel du loyer</p>
-              <form onSubmit={modifierMontantLoyer} style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="number"
-                  value={nouveauMontant}
-                  onChange={(e) => setNouveauMontant(e.target.value)}
-                  style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "none", fontSize: "14px" }}
-                />
-                <button type="submit" style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
-                  Enregistrer
-                </button>
-              </form>
-              {messageMontant && <p style={{ color: "#7fd894", fontSize: "12px", marginTop: "8px" }}>{messageMontant}</p>}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
+              <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", maxWidth: "360px", flex: "1 1 300px" }}>
+                <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 8px" }}>💰 Montant actuel du loyer</p>
+                <form onSubmit={modifierMontantLoyer} style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="number"
+                    value={nouveauMontant}
+                    onChange={(e) => setNouveauMontant(e.target.value)}
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "none", fontSize: "14px" }}
+                  />
+                  <button type="submit" style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+                    Enregistrer
+                  </button>
+                </form>
+                {messageMontant && <p style={{ color: "#7fd894", fontSize: "12px", marginTop: "8px" }}>{messageMontant}</p>}
+              </div>
+
+              <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", maxWidth: "360px", flex: "1 1 300px" }}>
+                <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 8px" }}>🔑 Montant de la caution (1er mois)</p>
+                <form onSubmit={modifierMontantCaution} style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="number"
+                    value={nouvelleCaution}
+                    onChange={(e) => setNouvelleCaution(e.target.value)}
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "none", fontSize: "14px" }}
+                  />
+                  <button type="submit" style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+                    Enregistrer
+                  </button>
+                </form>
+                {messageCaution && <p style={{ color: "#7fd894", fontSize: "12px", marginTop: "8px" }}>{messageCaution}</p>}
+              </div>
             </div>
 
             {chargement ? (
