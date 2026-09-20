@@ -737,7 +737,9 @@ function App() {
                     <div>
                       <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>Payer mon loyer</p>
                       <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#777" }}>
-                        {montantLoyer ? `${montantLoyer.toLocaleString("fr-FR")} FCFA / mois — ` : ""}Réglez votre loyer en toute sécurité via Wave.
+                        {montantCaution && montantLoyer
+                          ? `Caution (1er mois) : ${montantCaution.toLocaleString("fr-FR")} FCFA — puis ${montantLoyer.toLocaleString("fr-FR")} FCFA/mois`
+                          : "Réglez votre loyer en toute sécurité via Wave."}
                       </p>
                     </div>
                   </div>
