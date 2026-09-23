@@ -75,6 +75,10 @@ function App() {
   const [paiementEnCours, setPaiementEnCours] = useState(false);
   const [erreurPaiement, setErreurPaiement] = useState("");
 
+  const [appartements, setAppartements] = useState([]);
+  const [nouvelAppartement, setNouvelAppartement] = useState("");
+  const [messageAppartement, setMessageAppartement] = useState("");
+
   const EMAILJS_SERVICE_ID = "service_1pbl2tm";
   const EMAILJS_TEMPLATE_ID = "template_tjcrgph";
   const EMAILJS_PUBLIC_KEY = "1it575--ftfEqFdFS";
@@ -111,6 +115,43 @@ function App() {
       setMontantCaution(data.montant_caution);
       setNouvelleCaution(data.montant_caution.toString());
     }
+  };
+
+  const chargerAppartements = async () => {
+    const { data, error } = await supabase
+      .from("appartements")
+      .select("*")
+      .order("nom", { ascending: true });
+    if (!error) setAppartements(data);
+  };
+
+  const ajouterAppartement = async (e) => {
+    e.preventDefault();
+    setMessageAppartement("");
+    const nom = nouvelAppartement.trim();
+    if (!nom) {
+      setMessageAppartement("Nom invalide.");
+      return;
+    }
+    const { error } = await supabase.from("appartements").insert([{ nom }]);
+    if (error) {
+      setMessageAppartement(error.code === "23505" ? "Cet appartement existe déjà." : "Erreur lors de l'ajout.");
+      return;
+    }
+    setNouvelAppartement("");
+    setMessageAppartement("Appartement ajouté !");
+    chargerAppartements();
+  };
+
+  const retirerAppartement = async (id) => {
+    const confirmation = window.confirm("Retirer cet appartement de la liste ?");
+    if (!confirmation) return;
+    const { error } = await supabase.from("appartements").delete().eq("id", id);
+    if (error) {
+      alert("Erreur lors de la suppression.");
+      return;
+    }
+    chargerAppartements();
   };
 
   const modifierMontantLoyer = async (e) => {
@@ -208,6 +249,7 @@ function App() {
     chargerDemandes();
     chargerLoyers();
     chargerMontantLoyer();
+    chargerAppartements();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -650,6 +692,131 @@ function App() {
             <thead><tr><th>Étudiant</th>${entetesMois}</tr></thead>
             <tbody>${lignes || `<tr><td colspan="13">Aucun étudiant avec un logement validé.</td></tr>`}</tbody>
           </table>
+          <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
+        </body>
+      </html>
+    `);
+    fenetre.document.close();
+  };
+
+  const telechargerToutesDemandes = () => {
+    const fenetre = window.open("", "_blank");
+    if (!fenetre) return;
+
+    const dateGeneration = new Date().toLocaleDateString("fr-FR");
+
+    const genererTableau = (liste) => {
+      if (liste.length === 0) return "<p>Aucune demande.</p>";
+      return `
+        <table>
+          <thead>
+            <tr><th>Nom</th><th>Prénom</th><th>Filière</th><th>N° carte</th><th>Téléphone</th><th>Lieu</th></tr>
+          </thead>
+          <tbody>
+            ${liste.map((d) => `
+              <tr>
+                <td>${d.nom}</td>
+                <td>${d.prenom}</td>
+                <td>${d.filiere || "-"}</td>
+                <td>${d.numeroCarteEtudiant || "-"}</td>
+                <td>${d.telephone}</td>
+                <td>${d.quartier ? (d.quartier === "Autre" ? d.autreQuartier : d.quartier) : d.lieuChambre ? `${d.lieuChambre} (chambre ${d.numeroChambre || "?"})` : "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    };
+
+    const validees = demandes.filter((d) => d.statut === "validée");
+    const nonValidees = demandes.filter((d) => d.statut === "non validée");
+    const enAttente = demandes.filter((d) => d.statut === "en attente");
+
+    fenetre.document.write(`
+      <html>
+        <head>
+          <title>Toutes les demandes</title>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; }
+            h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
+            .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
+            h3 { margin-top: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            th, td { padding: 8px; font-size: 12px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #eaf1fb; }
+            .pied { margin-top: 24px; font-size: 11px; color: #999; }
+          </style>
+        </head>
+        <body onload="window.print()">
+          <h1>Toutes les demandes — Keur Bou Mag Bii</h1>
+          <p class="sous-titre">AEERN — généré le ${dateGeneration}</p>
+          <h3 style="color:#2e7d32;">✔ Validées (${validees.length})</h3>
+          ${genererTableau(validees)}
+          <h3 style="color:#c0392b;">✘ Non validées (${nonValidees.length})</h3>
+          ${genererTableau(nonValidees)}
+          <h3 style="color:#b8860b;">⏳ En attente (${enAttente.length})</h3>
+          ${genererTableau(enAttente)}
+          <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
+        </body>
+      </html>
+    `);
+    fenetre.document.close();
+  };
+
+  const telechargerDemandesCampus = () => {
+    const fenetre = window.open("", "_blank");
+    if (!fenetre) return;
+
+    const dateGeneration = new Date().toLocaleDateString("fr-FR");
+    const groupes = {};
+    demandes.filter((d) => d.lieuChambre).forEach((d) => {
+      const cle = d.lieuChambre;
+      if (!groupes[cle]) groupes[cle] = [];
+      groupes[cle].push(d);
+    });
+
+    let contenu = "";
+    Object.entries(groupes).forEach(([lieu, etudiants]) => {
+      contenu += `
+        <h3>${lieu} (${etudiants.length})</h3>
+        <table>
+          <thead><tr><th>Chambre</th><th>Nom</th><th>Prénom</th><th>Téléphone</th><th>Statut</th></tr></thead>
+          <tbody>
+            ${etudiants.map((e) => `
+              <tr>
+                <td>${e.numeroChambre || "?"}</td>
+                <td>${e.nom}</td>
+                <td>${e.prenom}</td>
+                <td>${e.telephone}</td>
+                <td>${e.statut}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    });
+
+    fenetre.document.write(`
+      <html>
+        <head>
+          <title>Demandes Campus social / ESP / Claudel</title>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; }
+            h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
+            .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
+            h3 { color: #1e5fa8; margin-top: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            th, td { padding: 8px; font-size: 12px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #eaf1fb; }
+            .pied { margin-top: 24px; font-size: 11px; color: #999; }
+          </style>
+        </head>
+        <body onload="window.print()">
+          <h1>Demandes — Campus social / ESP / Claudel — Keur Bou Mag Bii</h1>
+          <p class="sous-titre">AEERN — généré le ${dateGeneration}</p>
+          ${contenu || "<p>Aucune demande enregistrée.</p>"}
           <p class="pied">Document généré automatiquement — Keur Bou Mag Bii</p>
         </body>
       </html>
@@ -1255,12 +1422,20 @@ function App() {
                 <div style={{ width: "40px", height: "40px", borderRadius: "12px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>📋</div>
                 <h2 style={{ color: "white", margin: 0, fontSize: "19px" }}>Espace gestion — Demandes reçues ({demandes.length})</h2>
               </div>
-              <button
-                onClick={seDeconnecter}
-                style={{ backgroundColor: "#1a2f5c", color: "white", border: "none", padding: "10px 18px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}
-              >
-                ⏻ Se déconnecter
-              </button>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button
+                  onClick={telechargerToutesDemandes}
+                  style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "10px 18px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }}
+                >
+                  ⬇ Toutes les demandes (PDF)
+                </button>
+                <button
+                  onClick={seDeconnecter}
+                  style={{ backgroundColor: "#1a2f5c", color: "white", border: "none", padding: "10px 18px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  ⏻ Se déconnecter
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
@@ -1294,6 +1469,40 @@ function App() {
                   </button>
                 </form>
                 {messageCaution && <p style={{ color: "#7fd894", fontSize: "12px", marginTop: "8px" }}>{messageCaution}</p>}
+              </div>
+
+              <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", maxWidth: "360px", flex: "1 1 300px" }}>
+                <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 10px" }}>🏢 Gestion des appartements</p>
+                <form onSubmit={ajouterAppartement} style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
+                  <input
+                    type="text"
+                    value={nouvelAppartement}
+                    onChange={(e) => setNouvelAppartement(e.target.value)}
+                    placeholder="Nom de l'appartement"
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "none", fontSize: "14px" }}
+                  />
+                  <button type="submit" style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
+                    Ajouter
+                  </button>
+                </form>
+                {messageAppartement && <p style={{ color: "#7fd894", fontSize: "12px", margin: "0 0 10px" }}>{messageAppartement}</p>}
+                {appartements.length === 0 ? (
+                  <p style={{ color: "#8fa0c4", fontSize: "12px", margin: 0 }}>Aucun appartement ajouté pour le moment.</p>
+                ) : (
+                  <div style={{ display: "grid", gap: "6px" }}>
+                    {appartements.map((appt) => (
+                      <div key={appt.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#1a2f5c", padding: "6px 10px", borderRadius: "8px" }}>
+                        <span style={{ color: "white", fontSize: "13px" }}>{appt.nom}</span>
+                        <button
+                          onClick={() => retirerAppartement(appt.id)}
+                          style={{ backgroundColor: "#c62828", color: "white", border: "none", padding: "4px 10px", borderRadius: "14px", cursor: "pointer", fontSize: "11px", fontWeight: "bold" }}
+                        >
+                          Retirer
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1406,9 +1615,17 @@ function App() {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "30px 0 14px" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🛏️</div>
-              <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Chambres — Campus social / ESP / Claudel</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "30px 0 14px", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#1e5fa8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>🛏️</div>
+                <h2 style={{ color: "white", margin: 0, fontSize: "17px" }}>Chambres — Campus social / ESP / Claudel</h2>
+              </div>
+              <button
+                onClick={telechargerDemandesCampus}
+                style={{ backgroundColor: "#1e5fa8", color: "white", border: "none", padding: "8px 16px", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+              >
+                ⬇ Télécharger en PDF
+              </button>
             </div>
             {demandesValideesCampus.length === 0 ? (
               <p style={{ color: "#cfd8ec" }}>Aucun étudiant validé dans ces chambres pour le moment.</p>

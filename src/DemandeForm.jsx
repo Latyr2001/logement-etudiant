@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
 function DemandeForm({ onSubmitDemande, userId }) {
+  const [appartementsDisponibles, setAppartementsDisponibles] = useState([]);
+
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -10,7 +12,7 @@ function DemandeForm({ onSubmitDemande, userId }) {
     telephone: "",
     email: "",
     typeLogement: "chambre partagée",
-    quartier: "Mermoz",
+    quartier: "",
     autreQuartier: "",
     numeroCarteEtudiant: "",
     message: "",
@@ -20,6 +22,24 @@ function DemandeForm({ onSubmitDemande, userId }) {
   const [envoye, setEnvoye] = useState(false);
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [erreur, setErreur] = useState("");
+
+  useEffect(() => {
+    const chargerAppartements = async () => {
+      const { data, error } = await supabase
+        .from("appartements")
+        .select("nom")
+        .order("nom", { ascending: true });
+      if (!error && data) {
+        const noms = data.map((a) => a.nom);
+        setAppartementsDisponibles(noms);
+        setFormData((prev) => ({
+          ...prev,
+          quartier: prev.quartier || noms[0] || "Autre",
+        }));
+      }
+    };
+    chargerAppartements();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -225,13 +245,13 @@ function DemandeForm({ onSubmitDemande, userId }) {
           </div>
 
           <div>
-            <label style={styleLabel}>📍 Quartier / Résidence souhaité <span style={styleAsterisque}>*</span></label>
+            <label style={styleLabel}>📍 Appartement souhaité <span style={styleAsterisque}>*</span></label>
             <div style={styleChampWrap}>
               <span style={styleIconeChamp}>📍</span>
               <select name="quartier" value={formData.quartier} onChange={handleChange} style={styleChamp}>
-                <option value="Mermoz">Mermoz</option>
-                <option value="Fass">Fass</option>
-                <option value="Médina">Médina</option>
+                {appartementsDisponibles.map((appt) => (
+                  <option key={appt} value={appt}>{appt}</option>
+                ))}
                 <option value="Autre">Autre (à préciser)</option>
               </select>
             </div>
