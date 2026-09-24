@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
-import qrWave from "./qr-wave.png";
+import qrWave from "./qr-wave.jpg";
 
 const NUMERO_WAVE = "76 682 54 10";
 
