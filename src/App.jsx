@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import DemandeForm from "./DemandeForm";
 import logo from "./logo.png";
 import equipe from "./equipe.jpg";
-import qrWave from "./qr-wave.png";
+import qrWave from "./qr-wave.jpg";
 import emailjs from "@emailjs/browser";
 
 const MOIS_FR = [
