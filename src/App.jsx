@@ -3,6 +3,7 @@ import { supabase } from "./supabaseClient";
 import DemandeForm from "./DemandeForm";
 import logo from "./logo.png";
 import equipe from "./equipe.jpg";
+import qrWave from "./qr-wave.png";
 import emailjs from "@emailjs/browser";
 
 const MOIS_FR = [
@@ -15,6 +16,8 @@ const ORDRE_ANNEE_SCOLAIRE = [...MOIS_FR.slice(9), ...MOIS_FR.slice(0, 9)];
 const LIEUX_CHAMBRE = ["Campus social", "ESP", "Claudel"];
 
 const MOT_DE_PASSE_CAMPUS = "AEERN-campus2026";
+
+const NUMERO_WAVE = "76 682 54 10";
 
 function App() {
   const [page, setPage] = useState("accueil");
@@ -74,6 +77,16 @@ function App() {
   const [messageCaution, setMessageCaution] = useState("");
   const [paiementEnCours, setPaiementEnCours] = useState(false);
   const [erreurPaiement, setErreurPaiement] = useState("");
+
+  const [numeroCopie, setNumeroCopie] = useState(false);
+
+  const copierNumero = async () => {
+    try {
+      await navigator.clipboard.writeText(NUMERO_WAVE.replace(/\s/g, ""));
+      setNumeroCopie(true);
+      setTimeout(() => setNumeroCopie(false), 2000);
+    } catch {}
+  };
 
   const [appartements, setAppartements] = useState([]);
   const [nouvelAppartement, setNouvelAppartement] = useState("");
@@ -194,6 +207,7 @@ function App() {
     setMessageCaution("Montant mis à jour !");
   };
 
+  // Conservée pour plus tard : sera réutilisée quand la clé API Wave sera disponible.
   const payerLoyer = async () => {
     setErreurPaiement("");
     setPaiementEnCours(true);
@@ -993,48 +1007,59 @@ function App() {
                 </div>
 
                 <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "14px",
-                  backgroundColor: "#eaf1fb",
+                  backgroundColor: "#f0fbff",
+                  border: "2px solid #1dc8f2",
                   borderRadius: "14px",
-                  padding: "16px 18px",
+                  padding: "18px",
+                  textAlign: "center",
                   marginBottom: "18px",
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{ width: "38px", height: "38px", borderRadius: "10px", backgroundColor: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>👛</div>
-                    <div>
-                      <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>Payer mon loyer</p>
-                      <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#777" }}>
-                        {montantCaution && montantLoyer
-                          ? `Caution (1er mois) : ${montantCaution.toLocaleString("fr-FR")} FCFA — puis ${montantLoyer.toLocaleString("fr-FR")} FCFA/mois`
-                          : "Réglez votre loyer en toute sécurité via Wave."}
-                      </p>
-                    </div>
-                  </div>
+                  <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "15px" }}>
+                    💙 Payer mon loyer ou ma caution par Wave
+                  </p>
+                  {montantCaution && montantLoyer && (
+                    <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#777" }}>
+                      Caution (1er mois) : {montantCaution.toLocaleString("fr-FR")} FCFA — puis {montantLoyer.toLocaleString("fr-FR")} FCFA/mois
+                    </p>
+                  )}
+
+                  <p style={{ margin: "14px 0 2px", fontSize: "13px", color: "#555" }}>
+                    Envoyez le montant au numéro Wave :
+                  </p>
+                  <p style={{ margin: 0, fontSize: "30px", fontWeight: "800", color: bleuFonce, letterSpacing: "1px" }}>
+                    {NUMERO_WAVE}
+                  </p>
                   <button
-                    onClick={payerLoyer}
-                    disabled={paiementEnCours}
+                    type="button"
+                    onClick={copierNumero}
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "8px",
+                      marginTop: "10px",
+                      padding: "8px 18px",
+                      borderRadius: "20px",
+                      border: "none",
                       background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
                       color: "white",
-                      padding: "10px 22px",
-                      borderRadius: "25px",
                       fontWeight: "bold",
-                      border: "none",
-                      cursor: paiementEnCours ? "not-allowed" : "pointer",
                       fontSize: "13px",
-                      whiteSpace: "nowrap",
-                      opacity: paiementEnCours ? 0.7 : 1,
+                      cursor: "pointer",
                     }}
                   >
-                    🐧 {paiementEnCours ? "Redirection..." : "Payer avec Wave"}
+                    {numeroCopie ? "✅ Copié !" : "📋 Copier le numéro"}
                   </button>
+
+                  <p style={{ margin: "18px 0 8px", fontSize: "13px", color: "#555" }}>
+                    Ou scannez le QR code marchand :
+                  </p>
+                  <img
+                    src={qrWave}
+                    alt="QR code Wave marchand AEERN"
+                    style={{ width: "180px", maxWidth: "70%", background: "white", padding: "8px", borderRadius: "12px" }}
+                  />
+
+                  <p style={{ margin: "16px 0 0", fontSize: "12px", color: "#7a8699" }}>
+                    Après le paiement, gardez la capture d'écran de la confirmation Wave.
+                    Un problème ? Appelez le même numéro.
+                  </p>
                 </div>
 
                 {erreurPaiement && <p style={{ color: "#c0392b", fontSize: "12px", margin: "0 0 12px" }}>{erreurPaiement}</p>}

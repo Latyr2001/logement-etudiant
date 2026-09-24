@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
+import qrWave from "./qr-wave.png";
+
+const NUMERO_WAVE = "76 682 54 10";
 
 function DemandeForm({ onSubmitDemande, userId }) {
   const [appartementsDisponibles, setAppartementsDisponibles] = useState([]);
@@ -22,6 +25,15 @@ function DemandeForm({ onSubmitDemande, userId }) {
   const [envoye, setEnvoye] = useState(false);
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [erreur, setErreur] = useState("");
+  const [numeroCopie, setNumeroCopie] = useState(false);
+
+  const copierNumero = async () => {
+    try {
+      await navigator.clipboard.writeText(NUMERO_WAVE.replace(/\s/g, ""));
+      setNumeroCopie(true);
+      setTimeout(() => setNumeroCopie(false), 2000);
+    } catch {}
+  };
 
   useEffect(() => {
     const chargerAppartements = async () => {
@@ -143,6 +155,57 @@ function DemandeForm({ onSubmitDemande, userId }) {
       <div style={{ padding: "30px", textAlign: "center", fontFamily: "'Segoe UI', Arial, sans-serif" }}>
         <h2 style={{ color: bleuFonce, fontSize: "20px" }}>Merci {formData.prenom} !</h2>
         <p style={{ fontSize: "14px", color: "#555" }}>Votre demande de logement a bien été enregistrée.</p>
+
+        <div style={{
+          backgroundColor: "#f0fbff",
+          border: "2px solid #1dc8f2",
+          borderRadius: "14px",
+          padding: "18px",
+          textAlign: "center",
+          marginTop: "22px",
+        }}>
+          <p style={{ margin: 0, fontWeight: "700", color: bleuFonce, fontSize: "15px" }}>
+            💙 Payer votre loyer ou votre caution par Wave
+          </p>
+
+          <p style={{ margin: "14px 0 2px", fontSize: "13px", color: "#555" }}>
+            Envoyez le montant au numéro Wave :
+          </p>
+          <p style={{ margin: 0, fontSize: "30px", fontWeight: "800", color: bleuFonce, letterSpacing: "1px" }}>
+            {NUMERO_WAVE}
+          </p>
+          <button
+            type="button"
+            onClick={copierNumero}
+            style={{
+              marginTop: "10px",
+              padding: "8px 18px",
+              borderRadius: "20px",
+              border: "none",
+              background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
+              color: "white",
+              fontWeight: "bold",
+              fontSize: "13px",
+              cursor: "pointer",
+            }}
+          >
+            {numeroCopie ? "✅ Copié !" : "📋 Copier le numéro"}
+          </button>
+
+          <p style={{ margin: "18px 0 8px", fontSize: "13px", color: "#555" }}>
+            Ou scannez le QR code marchand :
+          </p>
+          <img
+            src={qrWave}
+            alt="QR code Wave marchand AEERN"
+            style={{ width: "180px", maxWidth: "70%", background: "white", padding: "8px", borderRadius: "12px" }}
+          />
+
+          <p style={{ margin: "16px 0 0", fontSize: "12px", color: "#7a8699" }}>
+            Après le paiement, gardez la capture d'écran de la confirmation Wave.
+            Un problème ? Appelez le même numéro.
+          </p>
+        </div>
       </div>
     );
   }
