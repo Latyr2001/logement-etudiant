@@ -167,6 +167,22 @@ function App() {
     chargerAppartements();
   };
 
+  const changerAppartementEtudiant = async (id, nouvelAppartement) => {
+    const { error } = await supabase
+      .from("demandes")
+      .update({ quartier: nouvelAppartement, autreQuartier: "" })
+      .eq("id", id);
+    if (error) {
+      alert("Erreur lors du changement d'appartement.");
+      return;
+    }
+    setDemandes((prev) =>
+      prev.map((d) =>
+        d.id === id ? { ...d, quartier: nouvelAppartement, autreQuartier: "" } : d
+      )
+    );
+  };
+
   const modifierMontantLoyer = async (e) => {
     e.preventDefault();
     setMessageMontant("");
@@ -1627,10 +1643,32 @@ function App() {
                       <h3 style={{ color: bleuFonce, marginTop: 0, marginBottom: "6px", fontSize: "15px" }}>
                         {nomAppart} <span style={{ color: "#888", fontWeight: "normal" }}>({etudiants.length} étudiant{etudiants.length > 1 ? "s" : ""})</span>
                       </h3>
-                      <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "14px", color: "#333" }}>
+                      <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "14px", color: "#333", listStyle: "none" }}>
                         {etudiants.map((e) => (
-                          <li key={e.id} style={{ marginBottom: "4px" }}>
-                            {e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}
+                          <li key={e.id} style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                            <span>{e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}</span>
+                            <select
+                              value=""
+                              onChange={(ev) => {
+                                const nouvelAppart = ev.target.value;
+                                if (!nouvelAppart) return;
+                                const confirmation = window.confirm(
+                                  `Déplacer ${e.nom} ${e.prenom} vers ${nouvelAppart} ?`
+                                );
+                                if (confirmation) {
+                                  changerAppartementEtudiant(e.id, nouvelAppart);
+                                }
+                                ev.target.value = "";
+                              }}
+                              style={{ padding: "4px 8px", borderRadius: "8px", border: `1px solid ${bleuMoyen}`, fontSize: "12px", color: bleuFonce }}
+                            >
+                              <option value="">🔀 Déplacer vers...</option>
+                              {appartements
+                                .filter((a) => a.nom !== nomAppart)
+                                .map((a) => (
+                                  <option key={a.id} value={a.nom}>{a.nom}</option>
+                                ))}
+                            </select>
                           </li>
                         ))}
                       </ul>
