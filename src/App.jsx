@@ -1576,11 +1576,39 @@ function App() {
                         <td style={{ padding: "12px" }}>{d.numeroCarteEtudiant}</td>
                         <td style={{ padding: "12px" }}>{d.telephone}</td>
                         <td style={{ padding: "12px" }}>
-                          {d.quartier
-                            ? (d.quartier === "Autre" ? d.autreQuartier : d.quartier)
-                            : d.lieuChambre
-                            ? `${d.lieuChambre} (chambre ${d.numeroChambre || "?"})`
-                            : "—"}
+                          {d.lieuChambre ? (
+                            `${d.lieuChambre} (chambre ${d.numeroChambre || "?"})`
+                          ) : (
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                              <span>
+                                {d.quartier
+                                  ? (d.quartier === "Autre" ? d.autreQuartier : d.quartier)
+                                  : "—"}
+                              </span>
+                              <select
+                                value=""
+                                onChange={(ev) => {
+                                  const nouvelAppart = ev.target.value;
+                                  if (!nouvelAppart) return;
+                                  const confirmation = window.confirm(
+                                    `Affecter ${d.nom} ${d.prenom} à ${nouvelAppart} ?`
+                                  );
+                                  if (confirmation) {
+                                    changerAppartementEtudiant(d.id, nouvelAppart);
+                                  }
+                                  ev.target.value = "";
+                                }}
+                                style={{ padding: "3px 6px", borderRadius: "8px", border: "1px solid #7fb3ff", fontSize: "11px", color: "#0d3b66", backgroundColor: "white" }}
+                              >
+                                <option value="">🔀 Changer...</option>
+                                {appartements
+                                  .filter((a) => a.nom !== d.quartier)
+                                  .map((a) => (
+                                    <option key={a.id} value={a.nom}>{a.nom}</option>
+                                  ))}
+                              </select>
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: "12px" }}>
                           {d.certificat ? (
