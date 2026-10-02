@@ -78,6 +78,8 @@ function App() {
   const [paiementEnCours, setPaiementEnCours] = useState(false);
   const [erreurPaiement, setErreurPaiement] = useState("");
 
+  const [candidaturesOuvertes, setCandidaturesOuvertes] = useState(true);
+
   const [numeroCopie, setNumeroCopie] = useState(false);
 
   const copierNumero = async () => {
@@ -119,7 +121,7 @@ function App() {
   const chargerMontantLoyer = async () => {
     const { data, error } = await supabase
       .from("parametres")
-      .select("montant_loyer, montant_caution")
+      .select("montant_loyer, montant_caution, candidatures_ouvertes")
       .eq("id", 1)
       .single();
     if (!error && data) {
@@ -127,7 +129,21 @@ function App() {
       setNouveauMontant(data.montant_loyer.toString());
       setMontantCaution(data.montant_caution);
       setNouvelleCaution(data.montant_caution.toString());
+      setCandidaturesOuvertes(data.candidatures_ouvertes ?? true);
     }
+  };
+
+  const basculerCandidatures = async () => {
+    const nouvelEtat = !candidaturesOuvertes;
+    const { error } = await supabase
+      .from("parametres")
+      .update({ candidatures_ouvertes: nouvelEtat })
+      .eq("id", 1);
+    if (error) {
+      alert("Erreur lors du changement.");
+      return;
+    }
+    setCandidaturesOuvertes(nouvelEtat);
   };
 
   const chargerAppartements = async () => {
@@ -1334,7 +1350,23 @@ function App() {
                     Se déconnecter
                   </button>
                 </div>
-                <DemandeForm onSubmitDemande={ajouterDemande} userId={session.user.id} />
+                {candidaturesOuvertes ? (
+                  <DemandeForm onSubmitDemande={ajouterDemande} userId={session.user.id} />
+                ) : (
+                  <div style={{
+                    backgroundColor: "white",
+                    border: `1.5px solid ${bleuMoyen}`,
+                    borderRadius: "18px",
+                    padding: "30px",
+                    textAlign: "center",
+                  }}>
+                    <p style={{ fontSize: "30px", margin: "0 0 10px" }}>🔒</p>
+                    <h3 style={{ color: bleuFonce, margin: "0 0 8px" }}>Les candidatures sont fermées</h3>
+                    <p style={{ color: "#777", fontSize: "14px" }}>
+                      La période de dépôt des demandes de logement est terminée. L'amicale traite actuellement les demandes reçues.
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1480,6 +1512,23 @@ function App() {
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
+              <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", maxWidth: "360px", flex: "1 1 300px" }}>
+                <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 10px" }}>🔒 État des candidatures</p>
+                <p style={{ color: "white", fontSize: "14px", margin: "0 0 10px", fontWeight: "bold" }}>
+                  {candidaturesOuvertes ? "🟢 Ouvertes" : "🔴 Fermées"}
+                </p>
+                <button
+                  onClick={basculerCandidatures}
+                  style={{
+                    backgroundColor: candidaturesOuvertes ? "#c62828" : "#2e7d32",
+                    color: "white", border: "none", padding: "8px 16px",
+                    borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "13px",
+                  }}
+                >
+                  {candidaturesOuvertes ? "Fermer les candidatures" : "Rouvrir les candidatures"}
+                </button>
+              </div>
+
               <div style={{ backgroundColor: "#132a5e", borderRadius: "14px", padding: "16px 20px", maxWidth: "360px", flex: "1 1 300px" }}>
                 <p style={{ color: "#cfd8ec", fontSize: "13px", margin: "0 0 8px" }}>💰 Montant actuel du loyer</p>
                 <form onSubmit={modifierMontantLoyer} style={{ display: "flex", gap: "8px" }}>
@@ -2058,4 +2107,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
