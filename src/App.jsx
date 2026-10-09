@@ -50,6 +50,8 @@ function App() {
   const [recuLoyersPayes, setRecuLoyersPayes] = useState([]);
   const [recuErreur, setRecuErreur] = useState("");
 
+  const [maDemande, setMaDemande] = useState(null);
+
   const [modeInscription, setModeInscription] = useState(false);
   const [compteEmail, setCompteEmail] = useState("");
   const [compteMotDePasse, setCompteMotDePasse] = useState("");
@@ -503,11 +505,39 @@ function App() {
     setRecuLoyersPayes(mesLoyers || []);
   };
 
+  const chargerMaDemande = async () => {
+    if (!session || estAdmin) return;
+
+    const { data } = await supabase
+      .from("demandes")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    setMaDemande(data && data.length > 0 ? data[0] : null);
+  };
+
   useEffect(() => {
     if (session && !estAdmin) {
       chargerRecusEtudiant();
+      chargerMaDemande();
     }
   }, [session, estAdmin]);
+
+  const basculerPaiementLoyer = async (loyerId, etatActuel) => {
+    const { error } = await supabase
+      .from("loyers")
+      .update({ paye: !etatActuel })
+      .eq("id", loyerId);
+    if (error) {
+      alert("Erreur lors de la mise à jour du paiement.");
+      return;
+    }
+    setLoyers((prev) =>
+      prev.map((l) => (l.id === loyerId ? { ...l, paye: !etatActuel } : l))
+    );
+  };
 
   const ouvrirRecu = (loyer, imprimerDirectement) => {
     const fenetre = window.open("", "_blank");
@@ -707,8 +737,8 @@ function App() {
 
     const dateGeneration = new Date().toLocaleDateString("fr-FR");
 
-    const lignes = demandesValideesAppartement.map((d) => {
-      const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
+    const lignes = demandesValideesAppartement.map((d) => { 
+const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
       const cellules = ORDRE_ANNEE_SCOLAIRE.map((m) => {
         const loyerMois = loyersEtudiant.find((l) => l.mois === m);
         const paye = loyerMois?.paye;
@@ -717,8 +747,9 @@ function App() {
       return `<tr><td>${d.nom} ${d.prenom}</td>${cellules}</tr>`;
     }).join("");
 
-    const entetesMois = ORDRE_ANNEE_SCOLAIRE.map((m) => `<th>${m.slice(0, 3)}</th>`).join(""); 
-fenetre.document.write(`
+    const entetesMois = ORDRE_ANNEE_SCOLAIRE.map((m) => `<th>${m.slice(0, 3)}</th>`).join("");
+
+    fenetre.document.write(`
       <html>
         <head>
           <title>Suivi des loyers</title>
@@ -1039,6 +1070,34 @@ fenetre.document.write(`
                     </p>
                   </div>
                 </div>
+
+                {maDemande && (
+                  <div style={{
+                    backgroundColor: "#eaf1fb",
+                    borderRadius: "14px",
+                    padding: "16px 18px",
+                    marginBottom: "18px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+                      <div>
+                        <p style={{ margin: "0 0 4px", fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>
+                          📋 État de ma demande de logement
+                        </p>
+                        <p style={{ margin: 0, fontSize: "13px", color: "#555" }}>
+                          {maDemande.lieuChambre
+                            ? `${maDemande.lieuChambre} (chambre ${maDemande.numeroChambre || "?"})`
+                            : maDemande.quartier
+                            ? (maDemande.quartier === "Autre" ? maDemande.autreQuartier : maDemande.quartier)
+                            : "—"}
+                        </p>
+                      </div>
+                      {badgeStatut(maDemande.statut)}
+                    </div>
+                    <p style={{ margin: "10px 0 0", fontSize: "11px", color: "#7a8699" }}>
+                      Ce statut est géré par l'amicale et ne peut pas être modifié depuis ton compte.
+                    </p>
+                  </div>
+                )}
 
                 <div style={{
                   backgroundColor: "#f0fbff",
@@ -1417,9 +1476,8 @@ fenetre.document.write(`
                 )}
               </>
             )}
-          </div>
-
-          <div style={{
+          </div> 
+<div style={{
             backgroundColor: bleuFonce,
             padding: "40px 20px",
             display: "flex",
@@ -1436,8 +1494,8 @@ fenetre.document.write(`
             ].map((carte, i) => (
               <div key={i} style={{ textAlign: "center", maxWidth: "180px", color: "white" }}>
                 <h3 style={{ fontSize: "15px", marginBottom: "8px" }}>{carte.titre}</h3>
-                <p style={{ fontSize: "13px", color: "#cfe0f5" }}>{carte.texte}</p> 
- </div>
+                <p style={{ fontSize: "13px", color: "#cfe0f5" }}>{carte.texte}</p>
+              </div>
             ))}
           </div>
 
@@ -1865,13 +1923,25 @@ fenetre.document.write(`
                             const paye = loyerMois?.paye;
                             return (
                               <td key={m} style={{ textAlign: "center", padding: "4px" }}>
-                                <span style={{
-                                  display: "inline-block",
-                                  width: "20px",
-                                  height: "20px",
-                                  borderRadius: "50%",
-                                  backgroundColor: paye ? "#2e7d32" : "#ddd"
-                                }} title={paye ? "Payé" : "Non payé"}></span>
+                                <span
+                                  onClick={() => loyerMois && basculerPaiementLoyer(loyerMois.id, paye)}
+                                  title={
+                                    !loyerMois
+                                      ? "Mois non généré"
+                                      : paye
+                                      ? "Payé — cliquer pour marquer non payé"
+                                      : "Non payé — cliquer pour marquer payé"
+                                  }
+                                  style={{
+                                    display: "inline-block",
+                                    width: "20px",
+                                    height: "20px",
+                                    borderRadius: "50%",
+                                    backgroundColor: paye ? "#2e7d32" : "#ddd",
+                                    cursor: loyerMois ? "pointer" : "default",
+                                    border: loyerMois ? "2px solid #1e5fa8" : "2px solid transparent",
+                                  }}
+                                ></span>
                               </td>
                             );
                           })}
@@ -1881,7 +1951,7 @@ fenetre.document.write(`
                   </tbody>
                 </table>
                 <p style={{ fontSize: "13px", color: "#777", marginTop: "10px" }}>
-                  🟢 Payé &nbsp;&nbsp; ⚪ Non payé — Le paiement en ligne sera bientôt activé.
+                  🟢 Payé &nbsp;&nbsp; ⚪ Non payé — Clique sur un cercle pour changer l'état du mois après vérification du paiement Wave.
                 </p>
               </div>
             )}
