@@ -4,6 +4,9 @@ import qrWave from "./qr-wave.jpg";
 
 const NUMERO_WAVE = "76 682 54 10";
 
+const LIEN_WAVE_CAUTION = "https://pay.wave.com/m/M_sn_JCLiAwYORpSA/c/sn/?amount=5000";
+const LIEN_WAVE_MENSUALITE = "https://pay.wave.com/m/M_sn_JCLiAwYORpSA/c/sn/?amount=3000";
+
 function DemandeForm({ onSubmitDemande, userId }) {
   const [appartementsDisponibles, setAppartementsDisponibles] = useState([]);
 
@@ -200,6 +203,52 @@ function DemandeForm({ onSubmitDemande, userId }) {
             alt="QR code Wave marchand AEERN"
             style={{ width: "180px", maxWidth: "70%", background: "white", padding: "8px", borderRadius: "12px" }}
           />
+
+          <p style={{ margin: "18px 0 8px", fontSize: "13px", color: "#555" }}>
+            Ou payez directement en ligne avec Wave :
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+            <a
+              href={LIEN_WAVE_CAUTION}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-block",
+                width: "100%",
+                maxWidth: "300px",
+                padding: "12px",
+                borderRadius: "20px",
+                background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: "13px",
+                textDecoration: "none",
+                boxSizing: "border-box",
+              }}
+            >
+              💳 Payer la caution (5 000 FCFA)
+            </a>
+            <a
+              href={LIEN_WAVE_MENSUALITE}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-block",
+                width: "100%",
+                maxWidth: "300px",
+                padding: "12px",
+                borderRadius: "20px",
+                background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: "13px",
+                textDecoration: "none",
+                boxSizing: "border-box",
+              }}
+            >
+              💳 Payer la mensualité (3 000 FCFA)
+            </a>
+          </div>
 
           <p style={{ margin: "16px 0 0", fontSize: "12px", color: "#7a8699" }}>
             Après le paiement, gardez la capture d'écran de la confirmation Wave.

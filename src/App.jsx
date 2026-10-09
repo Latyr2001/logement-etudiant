@@ -19,6 +19,9 @@ const MOT_DE_PASSE_CAMPUS = "AEERN-campus2026";
 
 const NUMERO_WAVE = "76 682 54 10";
 
+const LIEN_WAVE_CAUTION = "https://pay.wave.com/m/M_sn_JCLiAwYORpSA/c/sn/?amount=5000";
+const LIEN_WAVE_MENSUALITE = "https://pay.wave.com/m/M_sn_JCLiAwYORpSA/c/sn/?amount=3000";
+
 function App() {
   const [page, setPage] = useState("accueil");
   const [demandes, setDemandes] = useState([]);
@@ -714,9 +717,8 @@ function App() {
       return `<tr><td>${d.nom} ${d.prenom}</td>${cellules}</tr>`;
     }).join("");
 
-    const entetesMois = ORDRE_ANNEE_SCOLAIRE.map((m) => `<th>${m.slice(0, 3)}</th>`).join("");
-
-    fenetre.document.write(`
+    const entetesMois = ORDRE_ANNEE_SCOLAIRE.map((m) => `<th>${m.slice(0, 3)}</th>`).join(""); 
+fenetre.document.write(`
       <html>
         <head>
           <title>Suivi des loyers</title>
@@ -1088,6 +1090,52 @@ function App() {
                     style={{ width: "180px", maxWidth: "70%", background: "white", padding: "8px", borderRadius: "12px" }}
                   />
 
+                  <p style={{ margin: "18px 0 8px", fontSize: "13px", color: "#555" }}>
+                    Ou payez directement en ligne avec Wave :
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+                    <a
+                      href={LIEN_WAVE_CAUTION}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-block",
+                        width: "100%",
+                        maxWidth: "300px",
+                        padding: "12px",
+                        borderRadius: "20px",
+                        background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
+                        color: "white",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      💳 Payer la caution (5 000 FCFA)
+                    </a>
+                    <a
+                      href={LIEN_WAVE_MENSUALITE}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-block",
+                        width: "100%",
+                        maxWidth: "300px",
+                        padding: "12px",
+                        borderRadius: "20px",
+                        background: "linear-gradient(135deg, #29c5e8, #1a8fd1)",
+                        color: "white",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      💳 Payer la mensualité (3 000 FCFA)
+                    </a>
+                  </div>
+
                   <p style={{ margin: "16px 0 0", fontSize: "12px", color: "#7a8699" }}>
                     Après le paiement, gardez la capture d'écran de la confirmation Wave.
                     Un problème ? Appelez le même numéro.
@@ -1388,8 +1436,8 @@ function App() {
             ].map((carte, i) => (
               <div key={i} style={{ textAlign: "center", maxWidth: "180px", color: "white" }}>
                 <h3 style={{ fontSize: "15px", marginBottom: "8px" }}>{carte.titre}</h3>
-                <p style={{ fontSize: "13px", color: "#cfe0f5" }}>{carte.texte}</p>
-              </div>
+                <p style={{ fontSize: "13px", color: "#cfe0f5" }}>{carte.texte}</p> 
+ </div>
             ))}
           </div>
 
@@ -1720,32 +1768,10 @@ function App() {
                       <h3 style={{ color: bleuFonce, marginTop: 0, marginBottom: "6px", fontSize: "15px" }}>
                         {nomAppart} <span style={{ color: "#888", fontWeight: "normal" }}>({etudiants.length} étudiant{etudiants.length > 1 ? "s" : ""})</span>
                       </h3>
-                      <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "14px", color: "#333", listStyle: "none" }}>
+                      <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "14px", color: "#333" }}>
                         {etudiants.map((e) => (
-                          <li key={e.id} style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                            <span>{e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}</span>
-                            <select
-                              value=""
-                              onChange={(ev) => {
-                                const nouvelAppart = ev.target.value;
-                                if (!nouvelAppart) return;
-                                const confirmation = window.confirm(
-                                  `Déplacer ${e.nom} ${e.prenom} vers ${nouvelAppart} ?`
-                                );
-                                if (confirmation) {
-                                  changerAppartementEtudiant(e.id, nouvelAppart);
-                                }
-                                ev.target.value = "";
-                              }}
-                              style={{ padding: "4px 8px", borderRadius: "8px", border: `1px solid ${bleuMoyen}`, fontSize: "12px", color: bleuFonce }}
-                            >
-                              <option value="">🔀 Déplacer vers...</option>
-                              {appartements
-                                .filter((a) => a.nom !== nomAppart)
-                                .map((a) => (
-                                  <option key={a.id} value={a.nom}>{a.nom}</option>
-                                ))}
-                            </select>
+                          <li key={e.id} style={{ marginBottom: "4px" }}>
+                            {e.nom} {e.prenom} — {e.telephone} — {e.filiere} {e.niveau}
                           </li>
                         ))}
                       </ul>
@@ -2107,4 +2133,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 
