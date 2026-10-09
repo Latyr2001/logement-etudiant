@@ -48,6 +48,7 @@ function App() {
 
   const [recuEtudiant, setRecuEtudiant] = useState(null);
   const [recuLoyersPayes, setRecuLoyersPayes] = useState([]);
+  const [mesTousLoyers, setMesTousLoyers] = useState([]);
   const [recuErreur, setRecuErreur] = useState("");
 
   const [maDemande, setMaDemande] = useState(null);
@@ -490,6 +491,7 @@ function App() {
     if (!mesDemandes || mesDemandes.length === 0) {
       setRecuEtudiant(null);
       setRecuLoyersPayes([]);
+      setMesTousLoyers([]);
       return;
     }
 
@@ -499,10 +501,10 @@ function App() {
     const { data: mesLoyers } = await supabase
       .from("loyers")
       .select("*")
-      .eq("demande_id", etudiant.id)
-      .eq("paye", true);
+      .eq("demande_id", etudiant.id);
 
-    setRecuLoyersPayes(mesLoyers || []);
+    setMesTousLoyers(mesLoyers || []);
+    setRecuLoyersPayes((mesLoyers || []).filter((l) => l.paye));
   };
 
   const chargerMaDemande = async () => {
@@ -737,8 +739,8 @@ function App() {
 
     const dateGeneration = new Date().toLocaleDateString("fr-FR");
 
-    const lignes = demandesValideesAppartement.map((d) => { 
-const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
+    const lignes = demandesValideesAppartement.map((d) => {
+      const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
       const cellules = ORDRE_ANNEE_SCOLAIRE.map((m) => {
         const loyerMois = loyersEtudiant.find((l) => l.mois === m);
         const paye = loyerMois?.paye;
@@ -755,7 +757,6 @@ const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
           <title>Suivi des loyers</title>
           <meta charset="utf-8" />
           <style>
-            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; }
             h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
             .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
             table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -1203,6 +1204,54 @@ const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
 
                 {erreurPaiement && <p style={{ color: "#c0392b", fontSize: "12px", margin: "0 0 12px" }}>{erreurPaiement}</p>}
 
+                {recuEtudiant && (
+                  <div style={{
+                    backgroundColor: "#eaf1fb",
+                    borderRadius: "14px",
+                    padding: "16px 18px",
+                    marginBottom: "18px",
+                    overflowX: "auto",
+                  }}>
+                    <p style={{ margin: "0 0 10px", fontWeight: "700", color: bleuFonce, fontSize: "14px" }}>
+                      📅 Mes mois payés
+                    </p>
+                    <table style={{ borderCollapse: "collapse", minWidth: "480px" }}>
+                      <thead>
+                        <tr>
+                          {ORDRE_ANNEE_SCOLAIRE.map((m) => (
+                            <th key={m} style={{ padding: "4px", fontSize: "11px", color: "#555" }}>{m.slice(0, 3)}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {ORDRE_ANNEE_SCOLAIRE.map((m) => {
+                            const loyerMois = mesTousLoyers.find((l) => l.mois === m);
+                            const paye = loyerMois?.paye;
+                            return (
+                              <td key={m} style={{ textAlign: "center", padding: "4px" }}>
+                                <span
+                                  title={!loyerMois ? "Mois non généré" : paye ? "Payé" : "Non payé"}
+                                  style={{
+                                    display: "inline-block",
+                                    width: "18px",
+                                    height: "18px",
+                                    borderRadius: "50%",
+                                    backgroundColor: paye ? "#2e7d32" : "#ddd",
+                                  }}
+                                ></span>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p style={{ margin: "10px 0 0", fontSize: "11px", color: "#7a8699" }}>
+                      🟢 Payé &nbsp;&nbsp; ⚪ Non payé — mis à jour par l'amicale après vérification du paiement, lecture seule.
+                    </p>
+                  </div>
+                )}
+
                 <h4 style={{ color: bleuFonce, fontSize: "14px", margin: "0 0 10px" }}>Mes reçus de paiement</h4>
                 {!recuEtudiant ? (
                   <p style={{ fontSize: "13px", color: "#777" }}>
@@ -1467,8 +1516,7 @@ const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
                     padding: "30px",
                     textAlign: "center",
                   }}>
-                    <p style={{ fontSize: "30px", margin: "0 0 10px" }}>🔒</p>
-                    <h3 style={{ color: bleuFonce, margin: "0 0 8px" }}>Les candidatures sont fermées</h3>
+                    <p style={{ fontSize: "30px", margin: "0 0 10px" }}>🔒</p><h3 style={{ color: bleuFonce, margin: "0 0 8px" }}>Les candidatures sont fermées</h3>
                     <p style={{ color: "#777", fontSize: "14px" }}>
                       La période de dépôt des demandes de logement est terminée. L'amicale traite actuellement les demandes reçues.
                     </p>
@@ -1476,8 +1524,9 @@ const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
                 )}
               </>
             )}
-          </div> 
-<div style={{
+          </div>
+
+          <div style={{
             backgroundColor: bleuFonce,
             padding: "40px 20px",
             display: "flex",
@@ -2203,4 +2252,4 @@ const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
   );
 }
 
-export default App; 
+export default App;
