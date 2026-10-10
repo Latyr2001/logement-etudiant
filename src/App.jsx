@@ -13,6 +13,11 @@ const MOIS_FR = [
 
 const ORDRE_ANNEE_SCOLAIRE = [...MOIS_FR.slice(9), ...MOIS_FR.slice(0, 9)];
 
+// Convertit un couple (mois, année) en un indice croissant dans le temps,
+// ce qui permet de trier/comparer des mois même quand ils appartiennent
+// à des années différentes (ex: Décembre 2026 avant Janvier 2027).
+const indexMoisAnnee = (mois, annee) => annee * 12 + MOIS_FR.indexOf(mois);
+
 const LIEUX_CHAMBRE = ["Campus social", "ESP", "Claudel"];
 
 const MOT_DE_PASSE_CAMPUS = "AEERN-campus2026";
@@ -302,6 +307,7 @@ function App() {
     chargerLoyers();
     chargerMontantLoyer();
     chargerAppartements();
+    renouvellerLoyersSiNecessaire();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -528,17 +534,87 @@ function App() {
   }, [session, estAdmin]);
 
   const basculerPaiementLoyer = async (loyerId, etatActuel) => {
+    const nouvelEtat = !etatActuel;
+    const dateDuJour = nouvelEtat ? new Date().toISOString().slice(0, 10) : null;
+
     const { error } = await supabase
       .from("loyers")
-      .update({ paye: !etatActuel })
+      .update({ paye: nouvelEtat, date_paiement: dateDuJour })
       .eq("id", loyerId);
     if (error) {
       alert("Erreur lors de la mise à jour du paiement.");
       return;
     }
     setLoyers((prev) =>
-      prev.map((l) => (l.id === loyerId ? { ...l, paye: !etatActuel } : l))
+      prev.map((l) => (l.id === loyerId ? { ...l, paye: nouvelEtat, date_paiement: dateDuJour } : l))
     );
+  };
+
+  const formaterDateFr = (dateIso) => {
+    if (!dateIso) return "";
+    const d = new Date(dateIso + "T00:00:00");
+    return d.toLocaleDateString("fr-FR");
+  };
+
+  // Garantit que chaque étudiant avec un appartement validé a toujours au
+  // moins 6 mois de loyers générés à l'avance. Dès que la marge descend
+  // en dessous, on ajoute automatiquement les 12 mois suivants, en
+  // continuant la numérotation mois/année sans jamais revenir à "Janvier"
+  // tout seul : l'année avance avec le temps (2026 -> 2027 -> ...).
+  const renouvellerLoyersSiNecessaire = async () => {
+    const { data: demandesValideesAppart } = await supabase
+      .from("demandes")
+      .select("id, lieuChambre, statut")
+      .eq("statut", "validée");
+
+    if (!demandesValideesAppart) return;
+    const idsConcernes = demandesValideesAppart
+      .filter((d) => !d.lieuChambre)
+      .map((d) => d.id);
+
+    if (idsConcernes.length === 0) return;
+
+    const { data: tousLesLoyers } = await supabase
+      .from("loyers")
+      .select("demande_id, mois, annee")
+      .in("demande_id", idsConcernes);
+
+    if (!tousLesLoyers) return;
+
+    const maintenant = new Date();
+    const indexActuel = indexMoisAnnee(MOIS_FR[maintenant.getMonth()], maintenant.getFullYear());
+
+    const nouveauxLoyersATous = [];
+
+    idsConcernes.forEach((demandeId) => {
+      const loyersDeLetudiant = tousLesLoyers.filter((l) => l.demande_id === demandeId);
+      if (loyersDeLetudiant.length === 0) return;
+
+      const indexMax = Math.max(
+        ...loyersDeLetudiant.map((l) => indexMoisAnnee(l.mois, l.annee))
+      );
+
+      if (indexMax - indexActuel < 6) {
+        for (let i = 1; i <= 12; i++) {
+          const nouvelIndex = indexMax + i;
+          const annee = Math.floor(nouvelIndex / 12);
+          const moisIdx = ((nouvelIndex % 12) + 12) % 12;
+          nouveauxLoyersATous.push({
+            demande_id: demandeId,
+            mois: MOIS_FR[moisIdx],
+            annee: annee,
+            paye: false,
+          });
+        }
+      }
+    });
+
+    if (nouveauxLoyersATous.length > 0) {
+      const { error } = await supabase.from("loyers").insert(nouveauxLoyersATous);
+      if (!error) {
+        chargerLoyers();
+      }
+    }
   };
 
   const ouvrirRecu = (loyer, imprimerDirectement) => {
@@ -574,6 +650,7 @@ function App() {
               <tr><td>Prénom</td><td>${recuEtudiant.prenom}</td></tr>
               <tr><td>Numéro de carte étudiant</td><td>${recuEtudiant.numeroCarteEtudiant}</td></tr>
               <tr><td>Mois concerné</td><td>${loyer.mois} ${loyer.annee}</td></tr>
+              <tr><td>Date du paiement</td><td>${formaterDateFr(loyer.date_paiement) || "-"}</td></tr>
               <tr><td>Date d'émission du reçu</td><td>${dateGeneration}</td></tr>
             </table>
             <div class="statut">✔ Loyer payé</div>
@@ -720,8 +797,7 @@ function App() {
             th, td { padding: 8px; font-size: 13px; border: 1px solid #ddd; text-align: left; }
             th { background-color: #eaf1fb; }
             .pied { margin-top: 24px; font-size: 11px; color: #999; }
-          </style>
-        </head>
+          </style></head>
         <body onload="window.print()">
           <h1>Logements par appartement — Keur Bou Mag Bii</h1>
           <p class="sous-titre">AEERN — Liste des étudiants avec logement validé — généré le ${dateGeneration}</p>
@@ -739,17 +815,20 @@ function App() {
 
     const dateGeneration = new Date().toLocaleDateString("fr-FR");
 
+    const colonnes = colonnesLoyers(loyers);
+
     const lignes = demandesValideesAppartement.map((d) => {
       const loyersEtudiant = loyers.filter((l) => l.demande_id === d.id);
-      const cellules = ORDRE_ANNEE_SCOLAIRE.map((m) => {
-        const loyerMois = loyersEtudiant.find((l) => l.mois === m);
+      const cellules = colonnes.map((c) => {
+        const loyerMois = loyersEtudiant.find((l) => l.mois === c.mois && l.annee === c.annee);
         const paye = loyerMois?.paye;
-        return `<td style="text-align:center; color:${paye ? "#2e7d32" : "#c0392b"}; font-weight:bold;">${paye ? "✔" : "✘"}</td>`;
+        const titreDate = paye && loyerMois?.date_paiement ? ` title="Payé le ${formaterDateFr(loyerMois.date_paiement)}"` : "";
+        return `<td${titreDate} style="text-align:center; color:${paye ? "#2e7d32" : "#c0392b"}; font-weight:bold;">${paye ? "✔" : "✘"}</td>`;
       }).join("");
       return `<tr><td>${d.nom} ${d.prenom}</td>${cellules}</tr>`;
     }).join("");
 
-    const entetesMois = ORDRE_ANNEE_SCOLAIRE.map((m) => `<th>${m.slice(0, 3)}</th>`).join("");
+    const entetesMois = colonnes.map((c) => `<th>${c.mois.slice(0, 3)} ${c.annee}</th>`).join("");
 
     fenetre.document.write(`
       <html>
@@ -757,6 +836,7 @@ function App() {
           <title>Suivi des loyers</title>
           <meta charset="utf-8" />
           <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; }
             h1 { color: #0d3b66; font-size: 20px; margin-bottom: 4px; }
             .sous-titre { color: #777; font-size: 13px; margin-bottom: 24px; }
             table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -954,6 +1034,21 @@ function App() {
       groupes[cle].push(d);
     });
     return groupes;
+  };
+
+  // Calcule, à partir des loyers réellement présents en base, la liste
+  // chronologique des mois à afficher (avec leur année), au lieu d'une
+  // liste fixe de 12 mois. Ça permet au tableau de continuer d'année en
+  // année sans jamais mélanger deux mois de même nom.
+  const colonnesLoyers = (listeLoyers) => {
+    const indexVus = new Set();
+    listeLoyers.forEach((l) => indexVus.add(indexMoisAnnee(l.mois, l.annee)));
+    return Array.from(indexVus)
+      .sort((a, b) => a - b)
+      .map((idx) => ({
+        mois: MOIS_FR[((idx % 12) + 12) % 12],
+        annee: Math.floor(idx / 12),
+      }));
   };
 
   return (
@@ -1218,20 +1313,22 @@ function App() {
                     <table style={{ borderCollapse: "collapse", minWidth: "480px" }}>
                       <thead>
                         <tr>
-                          {ORDRE_ANNEE_SCOLAIRE.map((m) => (
-                            <th key={m} style={{ padding: "4px", fontSize: "11px", color: "#555" }}>{m.slice(0, 3)}</th>
+                          {colonnesLoyers(mesTousLoyers).map((c) => (
+                            <th key={`${c.mois}-${c.annee}`} style={{ padding: "4px", fontSize: "11px", color: "#555", whiteSpace: "nowrap" }}>
+                              {c.mois.slice(0, 3)}<br />{c.annee}
+                            </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          {ORDRE_ANNEE_SCOLAIRE.map((m) => {
-                            const loyerMois = mesTousLoyers.find((l) => l.mois === m);
+                          {colonnesLoyers(mesTousLoyers).map((c) => {
+                            const loyerMois = mesTousLoyers.find((l) => l.mois === c.mois && l.annee === c.annee);
                             const paye = loyerMois?.paye;
                             return (
-                              <td key={m} style={{ textAlign: "center", padding: "4px" }}>
+                              <td key={`${c.mois}-${c.annee}`} style={{ textAlign: "center", padding: "4px" }}>
                                 <span
-                                  title={!loyerMois ? "Mois non généré" : paye ? "Payé" : "Non payé"}
+                                  title={!loyerMois ? "Mois non généré" : paye ? `Payé le ${formaterDateFr(loyerMois.date_paiement)}` : "Non payé"}
                                   style={{
                                     display: "inline-block",
                                     width: "18px",
@@ -1247,7 +1344,7 @@ function App() {
                       </tbody>
                     </table>
                     <p style={{ margin: "10px 0 0", fontSize: "11px", color: "#7a8699" }}>
-                      🟢 Payé &nbsp;&nbsp; ⚪ Non payé — mis à jour par l'amicale après vérification du paiement, lecture seule.
+                      🟢 Payé &nbsp;&nbsp; ⚪ Non payé — mis à jour par l'amicale après vérification du paiement, lecture seule. Survole un cercle vert pour voir la date du paiement.
                     </p>
                   </div>
                 )}
@@ -1264,7 +1361,14 @@ function App() {
                     <div style={{ display: "grid", gap: "8px", marginBottom: "14px" }}>
                       {recuLoyersPayes.map((l) => (
                         <div key={l.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#eaf1fb", padding: "10px 14px", borderRadius: "10px" }}>
-                          <span style={{ fontSize: "14px", color: bleuFonce, fontWeight: "600" }}>{l.mois} {l.annee}</span>
+                          <span style={{ fontSize: "14px", color: bleuFonce, fontWeight: "600" }}>
+                            {l.mois} {l.annee}
+                            {l.date_paiement && (
+                              <span style={{ display: "block", fontSize: "11px", color: "#777", fontWeight: "400" }}>
+                                Payé le {formaterDateFr(l.date_paiement)}
+                              </span>
+                            )}
+                          </span>
                           <div style={{ display: "flex", gap: "6px" }}>
                             <button
                               onClick={() => ouvrirRecu(l, false)}
@@ -1493,7 +1597,7 @@ function App() {
                   </>
                 )}
               </div>
-            ) : (
+ ) : (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <p style={{ color: "#555", fontSize: "13px", margin: 0 }}>
@@ -1516,7 +1620,8 @@ function App() {
                     padding: "30px",
                     textAlign: "center",
                   }}>
-                    <p style={{ fontSize: "30px", margin: "0 0 10px" }}>🔒</p><h3 style={{ color: bleuFonce, margin: "0 0 8px" }}>Les candidatures sont fermées</h3>
+                    <p style={{ fontSize: "30px", margin: "0 0 10px" }}>🔒</p>
+                    <h3 style={{ color: bleuFonce, margin: "0 0 8px" }}>Les candidatures sont fermées</h3>
                     <p style={{ color: "#777", fontSize: "14px" }}>
                       La période de dépôt des demandes de logement est terminée. L'amicale traite actuellement les demandes reçues.
                     </p>
@@ -1954,8 +2059,10 @@ function App() {
                   <thead>
                     <tr style={{ borderBottom: `2px solid ${bleuFonce}` }}>
                       <th style={{ textAlign: "left", padding: "8px", position: "sticky", left: 0, backgroundColor: "white" }}>Étudiant</th>
-                      {ORDRE_ANNEE_SCOLAIRE.map((m) => (
-                        <th key={m} style={{ padding: "8px", fontSize: "12px" }}>{m.slice(0, 3)}</th>
+                      {colonnesLoyers(loyers).map((c) => (
+                        <th key={`${c.mois}-${c.annee}`} style={{ padding: "8px", fontSize: "11px", whiteSpace: "nowrap" }}>
+                          {c.mois.slice(0, 3)}<br />{c.annee}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -1967,18 +2074,18 @@ function App() {
                           <td style={{ padding: "8px", fontWeight: "bold", position: "sticky", left: 0, backgroundColor: "white" }}>
                             {d.nom} {d.prenom}
                           </td>
-                          {ORDRE_ANNEE_SCOLAIRE.map((m) => {
-                            const loyerMois = loyersEtudiant.find((l) => l.mois === m);
+                          {colonnesLoyers(loyers).map((c) => {
+                            const loyerMois = loyersEtudiant.find((l) => l.mois === c.mois && l.annee === c.annee);
                             const paye = loyerMois?.paye;
                             return (
-                              <td key={m} style={{ textAlign: "center", padding: "4px" }}>
+                              <td key={`${c.mois}-${c.annee}`} style={{ textAlign: "center", padding: "4px" }}>
                                 <span
                                   onClick={() => loyerMois && basculerPaiementLoyer(loyerMois.id, paye)}
                                   title={
                                     !loyerMois
                                       ? "Mois non généré"
                                       : paye
-                                      ? "Payé — cliquer pour marquer non payé"
+                                      ? `Payé le ${formaterDateFr(loyerMois.date_paiement)} — cliquer pour marquer non payé`
                                       : "Non payé — cliquer pour marquer payé"
                                   }
                                   style={{
@@ -2000,7 +2107,7 @@ function App() {
                   </tbody>
                 </table>
                 <p style={{ fontSize: "13px", color: "#777", marginTop: "10px" }}>
-                  🟢 Payé &nbsp;&nbsp; ⚪ Non payé — Clique sur un cercle pour changer l'état du mois après vérification du paiement Wave.
+                  🟢 Payé &nbsp;&nbsp; ⚪ Non payé — Clique sur un cercle pour changer l'état du mois après vérification du paiement Wave. Survole un cercle vert pour voir la date du paiement. Le tableau se prolonge automatiquement d'année en année.
                 </p>
               </div>
             )}
